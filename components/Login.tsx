@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Key, Loader2, User } from 'lucide-react';
+import { getApiUrl } from '../src/config';
 
 interface LoginProps {
   onLogin: (token: string) => void;
@@ -22,7 +23,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister }) => {
       formData.append('username', username);
       formData.append('password', password);
 
-      const response = await fetch('/api/token', {
+      const response = await fetch(getApiUrl('/api/token'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',

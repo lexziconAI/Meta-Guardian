@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { UserPlus, Loader2 } from 'lucide-react';
+import { getApiUrl } from '../src/config';
 
 interface RegisterProps {
   onRegisterSuccess: () => void;
@@ -24,7 +25,7 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess, onSwitchToLogin 
     setError(null);
 
     try {
-      const response = await fetch('/api/register', {
+      const response = await fetch(getApiUrl('/api/register'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

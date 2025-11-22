@@ -3,6 +3,7 @@ import { LiveVoiceCoach } from './components/LiveVoiceCoach';
 import Login from './components/Login';
 import Register from './components/Register';
 import { Globe, Mic, Info, LogOut } from 'lucide-react';
+import { getApiUrl } from './src/config';
 
 const App: React.FC = () => {
   const [showInfo, setShowInfo] = useState(false);
@@ -14,7 +15,7 @@ const App: React.FC = () => {
     const validateToken = async () => {
       if (token) {
         try {
-          const response = await fetch('/api/users/me', {
+          const response = await fetch(getApiUrl('/api/users/me'), {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           if (response.ok) {
