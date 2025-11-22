@@ -20,6 +20,8 @@ logging.basicConfig(
 
 # Robustly load .env from the same directory as this file
 env_path = Path(__file__).parent / ".env"
+print(f"DEBUG: Loading .env from: {env_path}")
+print(f"DEBUG: .env exists: {env_path.exists()}")
 # Force override to ensure we use the key from the file, not any stale system env var
 load_dotenv(dotenv_path=env_path, override=True)
 

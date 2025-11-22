@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+backend/.env
+.env
+MY_API_KEYS.txt
+RENDER_ENV_VARS.txt

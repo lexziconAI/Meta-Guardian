@@ -10,11 +10,31 @@ const App: React.FC = () => {
   const [view, setView] = useState<'login' | 'register' | 'app'>('login');
 
   useEffect(() => {
-    if (token) {
-      setView('app');
-    } else {
-      setView('login');
-    }
+    // Validate token on startup
+    const validateToken = async () => {
+      if (token) {
+        try {
+          const response = await fetch('/api/users/me', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (response.ok) {
+            setView('app');
+          } else {
+            // Token invalid, clear it
+            localStorage.removeItem('token');
+            setToken(null);
+            setView('login');
+          }
+        } catch {
+          // Network error, assume token might be valid
+          setView('app');
+        }
+      } else {
+        setView('login');
+      }
+    };
+    
+    validateToken();
   }, [token]);
 
   const handleLogin = (newToken: string) => {
