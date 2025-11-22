@@ -214,10 +214,10 @@ class FinalizeSessionRequest(schemas.BaseModel):
 
 @app.post("/api/finalize-session")
 async def finalize_session(request: FinalizeSessionRequest, db: Session = Depends(get_db)):
-    print(f"Finalizing session for {request.email}")
-
-    # --- Generate Comprehensive AI Report ---
     try:
+        print(f"Finalizing session for {request.email}")
+
+        # --- Generate Comprehensive AI Report ---
         groq_client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
         
         # Helper to normalize score to 0-100
@@ -278,18 +278,21 @@ async def finalize_session(request: FinalizeSessionRequest, db: Session = Depend
         # Inject into assessment data
         request.assessment['ai_report_html'] = ai_report_html
 
-    except Exception as e:
-        print(f"Error generating AI report: {e}")
-        # Fallback to basic report if AI fails
-        pass
-
-    # 2. Send Email
-    success = send_assessment_email(request.email, request.assessment)
-    
-    if not success:
-        raise HTTPException(status_code=500, detail="Failed to send email report")
+        # 2. Send Email
+        success = send_assessment_email(request.email, request.assessment)
         
-    return {"status": "success", "message": "Report sent successfully"}
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to send email report")
+            
+        return {"status": "success", "message": "Report sent successfully"}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in finalize_session: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to generate or send report: {str(e)}")
 
 # --- Static Files (React App) ---
 # Serve static files from the 'dist' directory
