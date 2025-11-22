@@ -3,49 +3,53 @@
 ## Table of Contents
 1. [System Overview](#system-overview)
 2. [Dual LLM Architecture](#dual-llm-architecture)
-3. [System Prompt](#system-prompt)
-4. [Inference Scoring Engine](#inference-scoring-engine)
-5. [File Structure](#file-structure)
-6. [Key Code Snippets](#key-code-snippets)
-7. [Data Flow](#data-flow)
+3. [Quantum Storytelling Framework](#quantum-storytelling-framework)
+4. [System Prompt](#system-prompt)
+5. [Narrative Inference Engine](#narrative-inference-engine)
+6. [File Structure](#file-structure)
+7. [Key Code Snippets](#key-code-snippets)
+8. [Data Flow](#data-flow)
 
 ---
 
 ## System Overview
 
-MetaGuardian is a Constitutional AI-powered voice assessment tool that evaluates readiness for AI-assisted early disease detection across five metabolic health dimensions. The system uses **two LLMs working in tandem**:
+**⚡ PARADIGM SHIFT: Assessment → Quantum Storytelling (November 2025)**
 
-1. **OpenAI Realtime API (GPT-4o-realtime)**: Handles voice conversation and real-time dimension scoring
-2. **Groq (Kimi-K2-Instruct)**: Generates comprehensive written reports post-session
+MetaGuardian is a Constitutional AI-powered **living narrative system** that elicits metabolic health stories using David Boje's Quantum Storytelling framework. The system uses **two LLMs working in tandem**:
 
-### Five Assessment Dimensions
+1. **OpenAI Realtime API (GPT-4o-realtime)**: Story midwifery through voice conversation + antenarrative elicitation
+2. **Groq (Kimi-K2-Instruct)**: Living story synthesis with multiple possible futures
 
-| Code | Dimension | Description |
-|------|-----------|-------------|
-| **HL** | Health Literacy | Understanding of health concepts and test results |
-| **CM** | Clinical Markers | Familiarity with and access to biomarkers |
-| **DI** | Data Integration | Ability/willingness to connect lifestyle + clinical data |
-| **DL** | Digital Literacy | Comfort with health tech tools and apps |
-| **PR** | Preventive Readiness | Motivation and capacity for preventive action |
+### Five Narrative Streams (formerly Assessment Dimensions)
+
+| Stream ID | Narrative Stream | Description |
+|-----------|------------------|-------------|
+| **BODY_KNOWLEDGE** | Body as Informant | User's relationship with bodily signals and somatic wisdom |
+| **BIOMARKER_MYTHOLOGY** | Medical Narrative | Stories about clinical markers, tests, and biomedical discourse |
+| **DATA_SYNTHESIS** | Life-Health Integration | How lifestyle patterns connect to health outcomes in user's story |
+| **TECHNOLOGY_RELATIONSHIP** | Tech Entanglement | User's narrative with health tracking tools and digital interfaces |
+| **FUTURE_HEALTH_IMAGINARY** | Preventive Story | Bets, speculations, and imagined health futures user is authoring |
 
 ---
 
 ## Dual LLM Architecture
 
-### LLM 1: OpenAI Realtime API (Voice + Inference)
+### LLM 1: OpenAI Realtime API (Voice + Antenarrative Elicitation)
 
-**Purpose**: Real-time conversation and fractal scoring  
+**Purpose**: Story midwifery and quantum narrative capture  
 **Model**: `gpt-4o-realtime-preview-2024-12-17`  
 **Communication**: WebSocket bidirectional streaming  
 **Location**: `backend/realtime_relay.py` + `components/LiveVoiceCoach.tsx`
 
 **Responsibilities**:
-- Voice-to-voice conversation with user
-- Fractal inference: Analyze entire conversation history every turn (starting turn 4)
-- Update dimension scores in real-time via `updateAssessmentState` tool
-- Log evidence with timestamps
-- Detect contradictions across conversation phases
-- Track conversation phase (OPENING → CORE → GAP_FILLING → VALIDATION → CLOSING)
+- Voice-to-voice story midwifery (not assessment)
+- Elicit antenarrative fragments (memories, speculations, contradictions, bets)
+- Track quantum states (multiple simultaneous truths with probabilities)
+- Capture temporal entanglement (past-present-future collapse)
+- Surface grand narratives (cultural/medical discourses user negotiates with)
+- Update narrative streams via `updateNarrativeState` tool
+- Track conversation phase (INVOCATION → EMERGENCE → ENTANGLEMENT → CRYSTALLIZATION → OPENING)
 
 **Why Realtime API?**
 - Low latency (<300ms) for natural conversation flow
@@ -53,32 +57,70 @@ MetaGuardian is a Constitutional AI-powered voice assessment tool that evaluates
 - Supports function calling during voice interaction
 - Handles interruptions gracefully
 
-### LLM 2: Groq (Report Generation)
+### LLM 2: Groq (Living Story Synthesis)
 
-**Purpose**: Post-session comprehensive report generation  
+**Purpose**: Post-session narrative synthesis with multiple possible futures  
 **Model**: `moonshotai/kimi-k2-instruct-0905`  
 **Communication**: REST API (one-shot)  
 **Location**: `backend/main.py` (finalize-session endpoint)
 
 **Responsibilities**:
-- Synthesize entire session transcript
-- Generate insights for each dimension
-- Provide actionable recommendations
-- Create HTML-formatted email report
-- Apply Constitutional AI safety checks
+- Synthesize living health story from antenarrative fragments
+- Honor quantum superposition (don't force single truth)
+- Map temporal entanglement across narrative streams
+- Surface grand narratives user is negotiating with
+- Offer 3 possible story paths (not prescriptions)
+- Apply Constitutional AI Yama principles as storytelling ethics
+- Create HTML-formatted narrative synthesis report
 
 **Why Groq?**
 - Extremely fast inference (800+ tokens/sec)
 - Cost-effective for long-context processing (full session transcript)
-- Strong instruction-following for report formatting
-- Good at multi-dimensional analysis
+- Strong instruction-following for narrative synthesis
+- Good at honoring contradictions without resolving them
+
+---
+
+## Quantum Storytelling Framework
+
+**Theoretical Foundation**: David Boje's Quantum Narratology applied to metabolic health
+
+### Core Concepts
+
+1. **ANTENARRATIVES**: Fragmented story bits before coherent narrative emerges
+   - Types: memory, speculation, contradiction, desire, fear, bet, turning_point
+   - Captured with tensions, possible endings, and quantum superposition states
+
+2. **QUANTUM SUPERPOSITION**: Multiple simultaneous truths existing at once
+   - Example: User is 60% "Empowered Tracker" + 30% "Anxious Monitor" + 10% "Compliant Patient"
+   - System honors all states rather than forcing collapse to single identity
+
+3. **GRAND NARRATIVES**: Cultural/medical discourses that frame individual stories
+   - Types: Medical authority, Quantified self, Genetic determinism, Wellness industry
+   - User stance: accepting, resisting, negotiating, transforming
+
+4. **TEMPORAL ENTANGLEMENT**: Past-present-future collapse into the now
+   - Captures how health stories exist across time simultaneously
+   - Prevention is inherently about imagined futures
+
+### Constitutional AI as Storytelling Ethics
+
+| Yama Principle | Storytelling Application |
+|----------------|-------------------------|
+| **Ahimsa** (Non-harm) | Never force a story the user isn't ready to tell |
+| **Satya** (Truth) | Honor contradictions as authentic (multiple truths) |
+| **Asteya** (Non-stealing) | The story belongs to the user, not the system |
+| **Brahmacharya** (Right energy) | Match story depth to user's emotional capacity |
+| **Aparigraha** (Non-attachment) | Share story patterns without claiming ownership |
 
 ---
 
 ## System Prompt
 
 ### Location
-`components/LiveVoiceCoach.tsx` (lines 128-202)
+`components/LiveVoiceCoach.tsx` (lines 128-275)
+
+### Version: QUANTUM_STORYTELLING_PROMPT (November 2025)
 
 ### Full System Prompt
 
@@ -769,16 +811,46 @@ def validate_recommendation(rec: str) -> bool:
 
 ---
 
-## Next Steps for Implementation
+## Implementation Status (November 2025)
 
-1. **Finalize System Prompt**: Test conversational quality with real users
-2. **Calibrate Scoring**: Validate dimension thresholds with pilot data
-3. **Implement Adaptive Questions**: Use `src/data/interview-questions.ts` logic
-4. **Add Data Ingestion**: Forms for rough (lifestyle) and precise (lab) data
-5. **Deploy to Production**: Render backend + frontend with environment variables
+### ✅ Completed (Phases 1-4)
+- [x] Quantum data model (`src/types/narrative-streams.ts`)
+- [x] QUANTUM_STORYTELLING_PROMPT system prompt
+- [x] `updateNarrativeState` tool definition
+- [x] QuantumStoryDashboard visualization component
+- [x] Documentation (QUANTUM_STORYTELLING.md)
+
+### 🚧 In Progress (Phases 5-8)
+- [ ] Transform Groq report to living story synthesis
+- [ ] Update backend database schema for narrative streams
+- [ ] Wire quantum state handlers in LiveVoiceCoach
+- [ ] Create test scenarios (contradiction embrace, temporal entanglement)
+- [ ] Install framer-motion dependency
+
+### 🎯 Next Deployment Steps
+1. **Smoke Test Sidecar LLMs**: Verify API keys (Anthropic, OpenAI, Groq, Gemini, Cohere, Fireworks, Fal)
+2. **Deploy to Render**: Backend + frontend with quantum storytelling mode
+3. **Pilot Testing**: Compare quantum vs. assessment approaches
+4. **Research Documentation**: Prepare PhD contribution materials
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: January 14, 2025  
+## Multi-LLM Orchestration Strategy
+
+**Sidecar Architecture**: Distribute remaining implementation across specialized LLMs
+
+| Phase | LLM Provider | Specialization | Task |
+|-------|--------------|----------------|------|
+| 5 | Groq (Kimi-K2) | Long-context synthesis | Transform report generation prompt |
+| 6 | Anthropic Claude | Code refactoring | Update backend schemas + database migration |
+| 7 | OpenAI GPT-4 | Complex logic | Wire state handlers + quantum calculations |
+| 8 | Cohere | Test generation | Create contradiction scenarios |
+
+**Coordination**: All work references QUANTUM_STORYTELLING.md + TECHNICAL_ARCHITECTURE.md
+
+---
+
+**Document Version**: 2.0  
+**Last Updated**: November 23, 2025  
+**Status**: Quantum Transformation 50% Complete (Phases 1-4 done, 5-8 pending)  
 **Author**: GitHub Copilot (Supervised by Regan @ lexziconAI)
