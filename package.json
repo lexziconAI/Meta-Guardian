@@ -1,8 +1,13 @@
 {
-  "name": "culturecoach---ai-cultural-competency-trainer",
+  "name": "metaguardian-metabolic-health-assessment",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "description": "AI-powered metabolic health readiness assessment tool - Constitutional AI framework for early disease detection research",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lexziconAI/Meta-Guardian.git"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",

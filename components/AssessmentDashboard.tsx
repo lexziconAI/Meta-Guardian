@@ -51,11 +51,11 @@ const DimensionRow: React.FC<{ code: string; data: any }> = ({ code, data }) => 
 
   // Define spectrum labels for each dimension
   const spectrums: Record<string, { left: string; right: string }> = {
-    DT: { left: "Indirect", right: "Direct" },
-    TR: { left: "Task", right: "Relational" },
-    CO: { left: "Harmony", right: "Confrontational" },
-    CA: { left: "Authentic", right: "Adaptive" },
-    EP: { left: "Objective", right: "Empathetic" }
+    HL: { left: "Low Understanding", right: "High Understanding" },
+    CM: { left: "Unaware", right: "Highly Familiar" },
+    DI: { left: "Siloed", right: "Integrated" },
+    DL: { left: "Tech Hesitant", right: "Tech Savvy" },
+    PR: { left: "Reactive", right: "Proactive" }
   };
 
   const labels = spectrums[code] || { left: "Low", right: "High" };
@@ -165,11 +165,11 @@ const ScoreEvolutionChart: React.FC<{ history: SessionState['scoreHistory'] }> =
   const data = {
     labels,
     datasets: [
-      { label: 'DT', data: history.map(h => normalize(h.DT)), borderColor: '#ef4444', tension: 0.4, pointRadius: 0, borderWidth: 1.5 },
-      { label: 'TR', data: history.map(h => normalize(h.TR)), borderColor: '#f59e0b', tension: 0.4, pointRadius: 0, borderWidth: 1.5 },
-      { label: 'CO', data: history.map(h => normalize(h.CO)), borderColor: '#10b981', tension: 0.4, pointRadius: 0, borderWidth: 1.5 },
-      { label: 'CA', data: history.map(h => normalize(h.CA)), borderColor: '#3b82f6', tension: 0.4, pointRadius: 0, borderWidth: 1.5 },
-      { label: 'EP', data: history.map(h => normalize(h.EP)), borderColor: '#8b5cf6', tension: 0.4, pointRadius: 0, borderWidth: 1.5 },
+      { label: 'HL', data: history.map(h => normalize(h.HL)), borderColor: '#ef4444', tension: 0.4, pointRadius: 0, borderWidth: 1.5 },
+      { label: 'CM', data: history.map(h => normalize(h.CM)), borderColor: '#f59e0b', tension: 0.4, pointRadius: 0, borderWidth: 1.5 },
+      { label: 'DI', data: history.map(h => normalize(h.DI)), borderColor: '#10b981', tension: 0.4, pointRadius: 0, borderWidth: 1.5 },
+      { label: 'DL', data: history.map(h => normalize(h.DL)), borderColor: '#3b82f6', tension: 0.4, pointRadius: 0, borderWidth: 1.5 },
+      { label: 'PR', data: history.map(h => normalize(h.PR)), borderColor: '#8b5cf6', tension: 0.4, pointRadius: 0, borderWidth: 1.5 },
     ]
   };
 
@@ -213,7 +213,7 @@ export const LiveTracker: React.FC<{ state: SessionState }> = ({ state }) => {
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-slate-800 flex items-center gap-2">
                 <Activity className="w-4 h-4 text-indigo-500" />
-                Current Cultural Profile
+                Metabolic Health Readiness
               </h3>
               <span className="text-xs px-2 py-1 bg-slate-100 rounded text-slate-500 font-medium">
                  {state.conversationPhase}

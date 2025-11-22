@@ -55,7 +55,7 @@ const App: React.FC = () => {
         <div className="max-w-5xl mx-auto px-4 h-36 flex items-center justify-between">
           <div className="flex items-center gap-2 text-indigo-600">
             <img src="/logo.png" alt="Axiom Logo" className="h-32 w-auto" />
-            <h1 className="font-bold text-xl tracking-tight">CultureCoach</h1>
+            <h1 className="font-bold text-xl tracking-tight">MetaGuardian</h1>
           </div>
           <div className="flex items-center gap-2">
             <button 
@@ -83,11 +83,11 @@ const App: React.FC = () => {
         {/* Info Modal / Overlay */}
         {showInfo && (
           <div className="absolute top-4 right-4 max-w-sm bg-white p-6 rounded-xl shadow-xl border border-slate-100 z-20 animate-fade-in-down">
-            <h3 className="font-semibold text-lg mb-2">About CultureCoach</h3>
+            <h3 className="font-semibold text-lg mb-2">About MetaGuardian</h3>
             <p className="text-slate-600 text-sm mb-4 leading-relaxed">
               This is an Axiom Intelligence Powered Experience – Interactive Oral Assessments as a Service (IOAaaS)
-              brought to you by the Axiom Intelligence API. Use it to practice difficult conversations, learn about
-              cultural norms, or role-play scenarios to improve your cultural competency.
+              brought to you by the Axiom Intelligence API. MetaGuardian assesses your readiness for AI-assisted
+              early disease detection tools through natural voice conversations.
             </p>
             <button 
               onClick={() => setShowInfo(false)}

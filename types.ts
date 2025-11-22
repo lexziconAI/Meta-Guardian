@@ -37,20 +37,20 @@ export interface ContradictionAlert {
 
 export interface ScorePoint {
   time: number; // seconds from start
-  DT: number;
-  TR: number;
-  CO: number;
-  CA: number;
-  EP: number;
+  HL: number;
+  CM: number;
+  DI: number;
+  DL: number;
+  PR: number;
 }
 
 export interface SessionState {
   dimensions: {
-    DT: DimensionState; // Directness & Transparency
-    TR: DimensionState; // Task vs Relational
-    CO: DimensionState; // Conflict Orientation
-    CA: DimensionState; // Cultural Adaptability
-    EP: DimensionState; // Empathy & Perspective
+    HL: DimensionState; // Health Literacy
+    CM: DimensionState; // Clinical Markers
+    DI: DimensionState; // Data Integration
+    DL: DimensionState; // Digital Literacy
+    PR: DimensionState; // Preventive Readiness
   };
   scoreHistory: ScorePoint[];
   evidenceLog: EvidenceItem[];
@@ -64,13 +64,13 @@ export interface SessionState {
 
 export const INITIAL_SESSION_STATE: SessionState = {
   dimensions: {
-    DT: { score: 3.0, confidence: 'LOW', evidenceCount: 0, trend: 'stable' },
-    TR: { score: 3.0, confidence: 'LOW', evidenceCount: 0, trend: 'stable' },
-    CO: { score: 3.0, confidence: 'LOW', evidenceCount: 0, trend: 'stable' },
-    CA: { score: 3.0, confidence: 'LOW', evidenceCount: 0, trend: 'stable' },
-    EP: { score: 3.0, confidence: 'LOW', evidenceCount: 0, trend: 'stable' },
+    HL: { score: 3.0, confidence: 'LOW', evidenceCount: 0, trend: 'stable' },
+    CM: { score: 3.0, confidence: 'LOW', evidenceCount: 0, trend: 'stable' },
+    DI: { score: 3.0, confidence: 'LOW', evidenceCount: 0, trend: 'stable' },
+    DL: { score: 3.0, confidence: 'LOW', evidenceCount: 0, trend: 'stable' },
+    PR: { score: 3.0, confidence: 'LOW', evidenceCount: 0, trend: 'stable' },
   },
-  scoreHistory: [{ time: 0, DT: 3, TR: 3, CO: 3, CA: 3, EP: 3 }],
+  scoreHistory: [{ time: 0, HL: 3, CM: 3, DI: 3, DL: 3, PR: 3 }],
   evidenceLog: [],
   contradictions: [],
   conversationPhase: 'OPENING',
@@ -79,9 +79,9 @@ export const INITIAL_SESSION_STATE: SessionState = {
 };
 
 export const DIMENSION_LABELS: Record<string, string> = {
-  DT: "Directness & Transparency",
-  TR: "Task vs Relational",
-  CO: "Conflict Orientation",
-  CA: "Cultural Adaptability",
-  EP: "Empathy & Perspective"
+  HL: "Health Literacy",
+  CM: "Clinical Markers",
+  DI: "Data Integration",
+  DL: "Digital Literacy",
+  PR: "Preventive Readiness"
 };
