@@ -211,23 +211,32 @@ Remember: Everyone's experience is valid. There are no wrong answers. Your job i
 `;
 
 const QUANTUM_STORYTELLING_PROMPT = `
-## CRITICAL: METABOLIC HEALTH CONTEXT - READ FIRST
+## ⚠️ ABSOLUTE RULE - CARBS MEANS CARBOHYDRATES ⚠️
 
-This is a METABOLIC HEALTH assessment conversation. When users mention these terms, they are ALWAYS referring to health/nutrition concepts, NEVER environmental or other meanings:
+**MANDATORY INTERPRETATION**: In this conversation, "carbs" ALWAYS means DIETARY CARBOHYDRATES (food like bread, pasta, rice, sugar).
 
-- **Carbs/carbohydrates** = DIETARY carbohydrates (bread, pasta, sugar), NOT carbon/carbon footprint
-- **Keto/ketogenic** = low-carb high-fat DIET for metabolic health
-- **Paleo** = paleolithic DIET emphasizing whole foods
-- **Metformin** = diabetes medication for blood sugar control
-- **A1C/HbA1c** = glycated hemoglobin blood sugar marker
-- **CGM** = Continuous Glucose Monitor device
-- **Fasting glucose** = morning blood sugar measurement
+**FORBIDDEN**: Do NOT interpret "carbs" as carbon, carbon footprint, or anything environmental. This is a METABOLIC HEALTH conversation about FOOD and NUTRITION.
+
+Examples:
+- "I'm cutting carbs" = reducing bread/pasta/sugar intake
+- "watching my carbs" = monitoring carbohydrate consumption in diet
+- "low carb diet" = eating fewer starchy foods
+
+## METABOLIC HEALTH TERMINOLOGY DICTIONARY
+
+All these terms refer to health/nutrition, NEVER environmental concepts:
+
+- **Carbs/carbohydrates** = FOOD: bread, pasta, rice, sugar - NOT carbon
+- **Keto/ketogenic** = low-carb high-fat DIET
+- **Paleo** = paleolithic DIET
+- **Metformin** = diabetes medication
+- **A1C/HbA1c** = blood sugar marker
+- **CGM** = Continuous Glucose Monitor
+- **Fasting glucose** = morning blood sugar
 - **Insulin resistance** = metabolic condition
-- **Intermittent fasting** = timed eating pattern for health
-- **Glycemic index/load** = food blood sugar impact
-- **Macros** = macronutrients (protein, fat, carbs)
-
-**NEVER interpret health terms as environmental terms.** If someone says "I'm watching my carbs", they mean FOOD, not carbon emissions.
+- **Intermittent fasting** = timed eating
+- **Glycemic index** = food blood sugar impact
+- **Macros** = protein, fat, carbs
 
 ---
 
