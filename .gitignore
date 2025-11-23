@@ -26,3 +26,18 @@ backend/.env
 .env
 MY_API_KEYS.txt
 RENDER_ENV_VARS.txt
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+venv/
+backend/venv/
+
+# Database files (contain user data)
+*.db
+*.sqlite3
+
+# Constitutional receipts (generated)
+backend/constitutional_receipts_*.json

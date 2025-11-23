@@ -12,12 +12,33 @@ export enum ConnectionState {
   COMPLETE = 'COMPLETE',
 }
 
+// NEW: Explicit source attribution for all scoring updates
+export enum InferenceSource {
+  OPENAI_REALTIME = 'openai_realtime',
+  SIDECAR_GROQ = 'sidecar_groq',
+  SIDECAR_KIMI = 'sidecar_kimi',
+  FALLBACK_RULE = 'fallback_rule'  // For emergency hardcoded rules
+}
+
+export interface InferenceMetadata {
+  source: InferenceSource;
+  model: string;  // e.g., "gpt-4o-realtime-preview-2024-12-17"
+  timestamp: string;
+  confidence: number;  // 0-1 scale
+  reasoning_trace?: string;  // Optional: why this inference was made
+  call_id: string;  // Original call_id from tool call
+}
+
 export interface DimensionState {
   score: number;           // Current estimate (0-5)
   confidence: 'LOW' | 'MEDIUM' | 'HIGH';
   evidenceCount: number;
   trend: 'up' | 'down' | 'stable';
   contextNotes?: string;
+  
+  // NEW: Add inference tracking
+  lastInference?: InferenceMetadata;  // Track most recent update source
+  inferenceHistory?: InferenceMetadata[];  // Full history of updates
 }
 
 export interface EvidenceItem {
@@ -26,6 +47,9 @@ export interface EvidenceItem {
   type: 'positive' | 'negative' | 'contextual';
   summary: string;
   scoreImpact?: number;
+  
+  // NEW: Add source attribution
+  inferenceMetadata?: InferenceMetadata;
 }
 
 export interface ContradictionAlert {

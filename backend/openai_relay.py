@@ -42,47 +42,48 @@ async def openai_relay(websocket: WebSocket):
     print(f"Client connected to OpenAI Relay. Websockets version: {websockets.__version__}")
     
     SIDECAR_SYSTEM_PROMPT = """
-You are an expert Cultural Intelligence (CQ) Assessor.
-Your task is to analyze the ongoing conversation between a User and an AI Coach.
+You are an expert Metabolic Health Readiness Assessor for MetaGuardian.
+Your task is to analyze the ongoing conversation between a User and an AI Health Coach.
 You must output a JSON object that matches the 'updateAssessmentState' tool definition.
 
 The JSON structure is:
 {
   "dimensions": {
-    "DT": { "score": 0-100, "confidence": "low|medium|high", "evidenceCount": int, "trend": "up|down|stable" },
-    "TR": { "score": 0-100, "confidence": "low|medium|high", "evidenceCount": int, "trend": "up|down|stable" },
-    "CO": { "score": 0-100, "confidence": "low|medium|high", "evidenceCount": int, "trend": "up|down|stable" },
-    "CA": { "score": 0-100, "confidence": "low|medium|high", "evidenceCount": int, "trend": "up|down|stable" },
-    "EP": { "score": 0-100, "confidence": "low|medium|high", "evidenceCount": int, "trend": "up|down|stable" }
+    "HL": { "score": 0-5, "confidence": "LOW|MEDIUM|HIGH", "evidenceCount": int, "trend": "up|down|stable" },
+    "CM": { "score": 0-5, "confidence": "LOW|MEDIUM|HIGH", "evidenceCount": int, "trend": "up|down|stable" },
+    "DI": { "score": 0-5, "confidence": "LOW|MEDIUM|HIGH", "evidenceCount": int, "trend": "up|down|stable" },
+    "DL": { "score": 0-5, "confidence": "LOW|MEDIUM|HIGH", "evidenceCount": int, "trend": "up|down|stable" },
+    "PR": { "score": 0-5, "confidence": "LOW|MEDIUM|HIGH", "evidenceCount": int, "trend": "up|down|stable" }
   },
   "newEvidence": {
-    "dimension": "DT|TR|CO|CA|EP",
+    "dimension": "HL|CM|DI|DL|PR",
     "type": "positive|negative|contextual",
     "summary": "One sentence description of the evidence found in this turn.",
     "timestamp": "MM:SS"
   },
   "contradiction": {
-    "dimension": "DT|TR|CO|CA|EP",
+    "dimension": "HL|CM|DI|DL|PR",
     "earlyStatement": "Quote from earlier",
     "lateStatement": "Quote from now",
     "resolution": "Explanation of the shift"
   },
   "phase": "OPENING" | "CORE" | "GAP_FILLING" | "VALIDATION" | "CLOSING",
   "isComplete": boolean,
-  "summary": "Short summary of the user's cultural profile so far.",
+  "summary": "Short summary of the user's health readiness profile so far.",
   "strengths": ["strength1", "strength2"],
   "developmentPriorities": ["priority1", "priority2"]
 }
 
 Analyze the user's responses for:
-- DT: Drive (Motivation)
-- TR: Knowledge (Cognition)
-- CO: Strategy (Metacognition)
-- CA: Action (Behavior)
-- EP: Empathy
+- HL: Health Literacy (understanding of diabetes, glucose monitoring, nutrition)
+- CM: Clinical Markers (A1C knowledge, glucose patterns, medication awareness)
+- DI: Data Integration (CGM usage, pattern recognition, data-driven decisions)
+- DL: Digital Literacy (tech comfort, app usage, data interpretation)
+- PR: Preventive Readiness (lifestyle changes, goal setting, sustained action)
 
 IMPORTANT: You MUST include the "newEvidence" object in your response for EVERY turn. If there is no strong evidence, provide a "contextual" observation.
 Be strict with JSON format. Do not include markdown formatting.
+Scores are on a 0-5 scale where: 0=none, 1=minimal, 2=developing, 3=moderate, 4=strong, 5=expert
 """
 
     # Robust Key Loading
@@ -105,6 +106,9 @@ Be strict with JSON format. Do not include markdown formatting.
     # Initialize Sidecar
     groq_client = AsyncGroq(api_key=GROQ_API_KEY)
     conversation_history = [] # List of {"role": "user"|"assistant", "content": "..."}
+    
+    # NEW: Import sidecar message signer for cryptographic attribution
+    from sidecar_inference import signer
     
     async def run_sidecar_analysis(history_snapshot):
         """Runs Groq inference in the background and injects the result back to the client."""
@@ -143,13 +147,26 @@ Be strict with JSON format. Do not include markdown formatting.
             duration = time.time() - start_time
             logging.info(f"[Sidecar] Analysis complete in {duration:.2f}s")
 
-            # Construct the fake tool call event for the frontend
-            tool_event = {
-                "type": "response.function_call_arguments.done",
-                "call_id": f"sidecar_{int(time.time())}",
-                "name": "updateAssessmentState",
-                "arguments": result_json_str
-            }
+            # NEW: Parse scores and create cryptographically signed message
+            try:
+                scores = json.loads(result_json_str)
+                tool_event = signer.create_signed_update(
+                    scores=scores,
+                    source='sidecar_groq' if 'kimi' not in GROQ_MODEL.lower() else 'sidecar_kimi',
+                    model=GROQ_MODEL,
+                    confidence=0.85,
+                    reasoning=result_json_str[:200]  # First 200 chars as reasoning trace
+                )
+                logging.info(f"[Sidecar] Created signed message with signature")
+            except json.JSONDecodeError:
+                # GRACEFUL DEGRADATION: Fall back to old format if JSON parsing fails
+                logging.warning("[Sidecar] JSON parse failed, using legacy format")
+                tool_event = {
+                    "type": "response.function_call_arguments.done",
+                    "call_id": f"sidecar_{int(time.time())}",
+                    "name": "updateAssessmentState",
+                    "arguments": result_json_str
+                }
             
             # Inject into client stream
             await websocket.send_text(json.dumps(tool_event))

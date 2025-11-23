@@ -103,10 +103,10 @@ const App: React.FC = () => {
             <>
               <div className="text-center space-y-2 max-w-2xl">
                 <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-                  Master Cultural Fluency
+                  MetaGuardian Health Assessment
                 </h2>
                 <p className="text-slate-500 text-lg">
-                  Start a real-time voice conversation to practice inclusive language and cross-cultural understanding.
+                  Start a real-time voice conversation to assess your metabolic health readiness with AI-powered guidance.
                 </p>
               </div>
 

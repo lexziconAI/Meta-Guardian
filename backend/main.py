@@ -16,6 +16,14 @@ from email_service import send_assessment_email
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 
+# ===================================================================
+# CRITICAL FIX: Move ALL late-binding imports to top level
+# This prevents silent crashes on Python 3.13/Windows
+# ===================================================================
+from groq import AsyncGroq
+from constitutional_ai import validate_story_synthesis, export_all_receipts
+from review_queue import ReviewQueueManager, JourneyMode
+
 load_dotenv()
 
 # Create tables
@@ -86,6 +94,15 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         raise credentials_exception
     return user
 
+async def require_admin(current_user: models.User = Depends(get_current_user)):
+    """Require user to have admin role"""
+    if not hasattr(current_user, 'role') or current_user.role != 'admin':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    return current_user
+
 # --- API Endpoints ---
 
 @app.post("/api/register", response_model=schemas.User)
@@ -118,8 +135,6 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 @app.get("/api/users/me", response_model=schemas.User)
 async def read_users_me(current_user: models.User = Depends(get_current_user)):
     return current_user
-
-from groq import AsyncGroq
 
 @app.post("/api/generate-report", response_model=schemas.Assessment)
 async def generate_report(request: schemas.ReportRequest, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
@@ -213,7 +228,7 @@ class FinalizeSessionRequest(schemas.BaseModel):
     assessment: dict
 
 @app.post("/api/finalize-session")
-async def finalize_session(request: FinalizeSessionRequest, db: Session = Depends(get_db)):
+async def finalize_session(request: FinalizeSessionRequest, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     try:
         print(f"Finalizing quantum story session for {request.email}")
 
@@ -270,9 +285,8 @@ async def finalize_session(request: FinalizeSessionRequest, db: Session = Depend
 - Quantum States: {len(stream_data.get('possibleStates', []))}
 """)
         
-        # CONSTITUTIONAL AI: Import validator for atomic validation
-        from backend.constitutional_ai import validate_story_synthesis, export_all_receipts
-        
+        # CONSTITUTIONAL AI: Validator imported at top level
+
         # Build quantum storytelling synthesis prompt
         story_synthesis_prompt = f"""
 You are synthesizing a LIVING HEALTH STORY using David Boje's Quantum Storytelling framework.
@@ -453,7 +467,6 @@ IMPORTANT: DO NOT include footer, copyright, or "© 2024" text. System adds offi
                 print(f"  ⚠️  {violation['principle']}: {violation['explanation']}")
         
         # Export receipts for PhD documentation
-        from datetime import datetime
         receipt_filename = f"constitutional_receipts_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
         export_all_receipts(receipt_filename)
         print(f"📂 Constitutional receipts exported: {receipt_filename}")
@@ -482,13 +495,69 @@ IMPORTANT: DO NOT include footer, copyright, or "© 2024" text. System adds offi
         request.assessment['story_synthesis_mode'] = 'quantum'
         request.assessment['constitutional_receipt_id'] = validation_receipt['receipt_id']
 
-        # 2. Send Email
-        success = send_assessment_email(request.email, request.assessment)
+        # ===================================================================
+        # THREE-TIER VALIDATION ARCHITECTURE: Human Review Queue
+        # (ReviewQueueManager imported at top level)
+        # ===================================================================
+
+        # Determine journey mode from narrative content
+        mode = JourneyMode.MEDICAL if any(
+            'medication' in str(f).lower() or 'insulin' in str(f).lower() 
+            for f in fragments
+        ) else JourneyMode.PREVENTIVE
         
-        if not success:
-            raise HTTPException(status_code=500, detail="Failed to send email report")
-            
-        return {"status": "success", "message": "Living story synthesis sent successfully"}
+        # Submit report for review (includes LLM harm detection via Claude)
+        review_manager = ReviewQueueManager(db)
+        review = await review_manager.submit_report_for_review(
+            session_id=request.assessment.get('sessionId', 'unknown'),
+            user_id=current_user.id,
+            user_email=request.email,
+            user_role=getattr(current_user, 'role', 'user'),  # Assume 'user' if no role field
+            report_html=ai_report_html,
+            groq_metadata={
+                'model': 'moonshotai/kimi-k2-instruct-0905',
+                'temperature': 0.75,
+                'phase': phase,
+                'fragments_count': len(fragments),
+                'turn_count': request.assessment.get('turnCount', 0),
+                'coherence': calculate_coherence(fragments),
+                'fluidity': calculate_fluidity(request.assessment.get('quantumStates', [])),
+                'authenticity': calculate_authenticity(request.assessment.get('yamaResonances', []))
+            },
+            mode=mode,
+            fragments=fragments,
+            session_data={
+                'narrative_streams': narrative_streams,
+                'quantum_states': request.assessment.get('quantumStates', []),
+                'yama_resonances': request.assessment.get('yamaResonances', []),
+                'summary': request.assessment.get('summary', '')
+            }
+        )
+        
+        # Handle response based on review status
+        # BETA MODE: Auto-approve all reports and send immediately
+        # TODO: Remove this bypass for production
+        if True:  # Was: review.status == 'approved'
+            # Auto-approved (BETA MODE - all reports sent immediately)
+            print(f"📧 BETA MODE: Sending email immediately to {request.email}")
+            success = send_assessment_email(request.email, request.assessment)
+            if not success:
+                raise HTTPException(status_code=500, detail="Failed to send email report")
+
+            return {
+                "status": "delivered",
+                "message": "Living story synthesis sent successfully",
+                "review_id": review.report_id,
+                "delivery_method": "immediate"
+            }
+        else:
+            # Pending human review (disabled in BETA)
+            return {
+                "status": "pending_review",
+                "message": "Your health report will be reviewed and emailed within 24 hours",
+                "review_id": review.report_id,
+                "estimated_delivery": "24 hours"
+            }
     
     except HTTPException:
         raise
@@ -497,6 +566,134 @@ IMPORTANT: DO NOT include footer, copyright, or "© 2024" text. System adds offi
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to generate or send story synthesis: {str(e)}")
+
+# ===================================================================
+# ADMIN API: Review Queue Management
+# ===================================================================
+
+@app.get("/api/admin/pending-reports")
+async def get_pending_reports(
+    db: Session = Depends(get_db),
+    admin_user: models.User = Depends(require_admin)
+):
+    """
+    Get all reports pending human review.
+    Returns de-identified context for reviewer.
+    """
+    review_manager = ReviewQueueManager(db)
+    pending = review_manager.get_pending_reviews()
+    
+    # Format response for dashboard
+    reports = []
+    for review in pending:
+        reports.append({
+            "report_id": review.report_id,
+            "created_at": review.created_at.isoformat() if review.created_at else None,
+            "risk_level": review.risk_level,
+            "flagged_sections_count": review.flagged_sections_count,
+            "mode": review.mode,
+            "key_themes": review.key_themes,
+            "user_journey_summary": review.user_journey_summary,
+            "requires_human_review": review.requires_human_review,
+            "llm_analysis": review.llm_analysis  # Full Claude analysis
+        })
+    
+    return {"pending_reports": reports, "count": len(reports)}
+
+@app.post("/api/admin/review-report/{report_id}")
+async def submit_review_decision(
+    report_id: str,
+    decision: dict,  # {"decision": "approve|reject|revise", "reviewer_notes": "..."}
+    db: Session = Depends(get_db),
+    admin_user: models.User = Depends(require_admin)
+):
+    """
+    Submit reviewer decision on a pending report.
+    If approved, delivers report to user via email.
+    """
+    review_manager = ReviewQueueManager(db)
+    
+    # Submit decision
+    updated_review = review_manager.submit_reviewer_decision(
+        report_id=report_id,
+        reviewer_id=admin_user.id,
+        decision=decision['decision'],
+        reviewer_notes=decision.get('reviewer_notes', '')
+    )
+    
+    if not updated_review:
+        raise HTTPException(status_code=404, detail="Report not found")
+    
+    # If approved, deliver report
+    if updated_review.reviewer_decision == 'approve':
+        # Reconstruct assessment data for email delivery
+        assessment_data = {
+            'ai_report_html': updated_review.report_html,
+            'story_synthesis_mode': 'quantum',
+            'constitutional_receipt_id': updated_review.groq_synthesis_metadata.get('constitutional_receipt_id', ''),
+            'summary': updated_review.groq_synthesis_metadata.get('summary', '')
+        }
+        
+        success = send_assessment_email(updated_review.user_email, assessment_data)
+        if not success:
+            raise HTTPException(status_code=500, detail="Review approved but email delivery failed")
+        
+        # Update delivery timestamp
+        updated_review.delivered_at = datetime.utcnow()
+        updated_review.delivery_method = 'email'
+        db.commit()
+    
+    return {
+        "status": "success",
+        "report_id": report_id,
+        "decision": updated_review.reviewer_decision,
+        "delivered": updated_review.delivered_at is not None
+    }
+
+@app.get("/api/admin/review-stats")
+async def get_review_stats(
+    db: Session = Depends(get_db),
+    admin_user: models.User = Depends(require_admin)
+):
+    """
+    Get review queue statistics for admin dashboard.
+    """
+    review_manager = ReviewQueueManager(db)
+    stats = review_manager.get_review_stats()
+    
+    return stats
+
+@app.get("/api/admin/report-details/{report_id}")
+async def get_report_details(
+    report_id: str,
+    db: Session = Depends(get_db),
+    admin_user: models.User = Depends(require_admin)
+):
+    """
+    Get full report details for review (de-identified).
+    """
+    review_manager = ReviewQueueManager(db)
+    review = review_manager.get_review_by_id(report_id)
+    
+    if not review:
+        raise HTTPException(status_code=404, detail="Report not found")
+    
+    return {
+        "report_id": review.report_id,
+        "status": review.status,
+        "risk_level": review.risk_level,
+        "flagged_sections_count": review.flagged_sections_count,
+        "mode": review.mode,
+        "key_themes": review.key_themes,
+        "user_journey_summary": review.user_journey_summary,
+        "report_html": review.report_html,
+        "llm_analysis": review.llm_analysis,
+        "groq_metadata": review.groq_synthesis_metadata,
+        "created_at": review.created_at.isoformat() if review.created_at else None,
+        "requires_human_review": review.requires_human_review,
+        "reviewer_notes": review.reviewer_notes,
+        "reviewer_decision": review.reviewer_decision
+    }
 
 # --- Static Files (React App) ---
 # Serve static files from the 'dist' directory

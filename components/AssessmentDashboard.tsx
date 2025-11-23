@@ -165,11 +165,11 @@ const ScoreEvolutionChart: React.FC<{ history: SessionState['scoreHistory'] }> =
   const data = {
     labels,
     datasets: [
-      { label: 'HL', data: history.map(h => normalize(h.HL)), borderColor: '#ef4444', tension: 0.4, pointRadius: 0, borderWidth: 1.5 },
-      { label: 'CM', data: history.map(h => normalize(h.CM)), borderColor: '#f59e0b', tension: 0.4, pointRadius: 0, borderWidth: 1.5 },
-      { label: 'DI', data: history.map(h => normalize(h.DI)), borderColor: '#10b981', tension: 0.4, pointRadius: 0, borderWidth: 1.5 },
-      { label: 'DL', data: history.map(h => normalize(h.DL)), borderColor: '#3b82f6', tension: 0.4, pointRadius: 0, borderWidth: 1.5 },
-      { label: 'PR', data: history.map(h => normalize(h.PR)), borderColor: '#8b5cf6', tension: 0.4, pointRadius: 0, borderWidth: 1.5 },
+      { label: 'Health Literacy (HL)', data: history.map(h => normalize(h.HL)), borderColor: '#ef4444', backgroundColor: '#ef4444', tension: 0.4, pointRadius: 4, borderWidth: 2.5 },
+      { label: 'Clinical Markers (CM)', data: history.map(h => normalize(h.CM)), borderColor: '#f59e0b', backgroundColor: '#f59e0b', tension: 0.4, pointRadius: 4, borderWidth: 2.5 },
+      { label: 'Data Integration (DI)', data: history.map(h => normalize(h.DI)), borderColor: '#10b981', backgroundColor: '#10b981', tension: 0.4, pointRadius: 4, borderWidth: 2.5 },
+      { label: 'Digital Literacy (DL)', data: history.map(h => normalize(h.DL)), borderColor: '#3b82f6', backgroundColor: '#3b82f6', tension: 0.4, pointRadius: 4, borderWidth: 2.5 },
+      { label: 'Preventive Readiness (PR)', data: history.map(h => normalize(h.PR)), borderColor: '#8b5cf6', backgroundColor: '#8b5cf6', tension: 0.4, pointRadius: 4, borderWidth: 2.5 },
     ]
   };
 
@@ -179,17 +179,41 @@ const ScoreEvolutionChart: React.FC<{ history: SessionState['scoreHistory'] }> =
     scales: {
       y: { 
         min: 0, 
-        max: 100, 
+        max: 100,
+        title: { display: true, text: 'Score (0-100%)', font: { size: 11, weight: 'bold' } },
         ticks: { stepSize: 20 },
-        grid: { color: '#f1f5f9' } 
+        grid: { color: '#e2e8f0' } 
       },
-      x: { grid: { display: false }, ticks: { maxTicksLimit: 6 } }
+      x: { 
+        title: { display: true, text: 'Session Time (mm:ss)', font: { size: 11, weight: 'bold' } },
+        grid: { display: false }, 
+        ticks: { maxTicksLimit: 8 } 
+      }
     },
     plugins: {
-      legend: { position: 'bottom' as const, labels: { boxWidth: 8, font: { size: 10 } } },
-      tooltip: { mode: 'index', intersect: false }
+      legend: { 
+        position: 'bottom' as const, 
+        labels: { 
+          boxWidth: 12, 
+          padding: 12,
+          font: { size: 11 },
+          usePointStyle: true
+        } 
+      },
+      tooltip: { 
+        mode: 'index', 
+        intersect: false,
+        callbacks: {
+          title: (items) => `Time: ${items[0].label}`,
+          label: (context) => {
+            const label = context.dataset.label || '';
+            const value = Math.round(context.parsed.y);
+            return `${label}: ${value}%`;
+          }
+        }
+      }
     },
-    animation: { duration: 0 }
+    animation: { duration: 300 }
   };
 
   return (
@@ -220,8 +244,9 @@ export const LiveTracker: React.FC<{ state: SessionState }> = ({ state }) => {
               </span>
             </div>
             <div className="space-y-1">
-                {(Object.keys(state.dimensions) as Array<keyof typeof state.dimensions>).map(key => (
-                    <DimensionRow key={key} code={key} data={state.dimensions[key]} />
+                {['HL', 'CM', 'DI', 'DL', 'PR'].map(key => (
+                    state.dimensions[key as keyof typeof state.dimensions] && 
+                    <DimensionRow key={key} code={key} data={state.dimensions[key as keyof typeof state.dimensions]} />
                 ))}
             </div>
         </div>
@@ -268,8 +293,9 @@ export const FinalReport: React.FC<{ state: SessionState }> = ({ state }) => {
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
              <div className="w-full space-y-2">
                 <h4 className="font-bold text-slate-700 mb-4">Dimension Scores</h4>
-                {(Object.keys(state.dimensions) as Array<keyof typeof state.dimensions>).map(key => (
-                    <DimensionRow key={key} code={key} data={state.dimensions[key]} />
+                {['HL', 'CM', 'DI', 'DL', 'PR'].map(key => (
+                    state.dimensions[key as keyof typeof state.dimensions] && 
+                    <DimensionRow key={key} code={key} data={state.dimensions[key as keyof typeof state.dimensions]} />
                 ))}
              </div>
              <div className="space-y-6">

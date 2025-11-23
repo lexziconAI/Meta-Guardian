@@ -18,12 +18,17 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister }) => {
     setIsLoading(true);
     setError(null);
 
+    console.log('🔐 Login attempt started for:', email);
+
     try {
       const formData = new URLSearchParams();
       formData.append('username', email);
       formData.append('password', password);
 
-      const response = await fetch(getApiUrl('/api/token'), {
+      const url = getApiUrl('/api/token');
+      console.log('📡 Sending request to:', url);
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -31,14 +36,20 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister }) => {
         body: formData,
       });
 
+      console.log('📥 Response status:', response.status);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Login failed:', response.status, errorText);
         throw new Error('Invalid username or password');
       }
 
       const data = await response.json();
+      console.log('✅ Login successful, token received');
       onLogin(data.access_token);
     } catch (err: any) {
-      setError(err.message);
+      console.error('❌ Login error:', err);
+      setError(err.message || 'Network error - check if backend is running');
     } finally {
       setIsLoading(false);
     }

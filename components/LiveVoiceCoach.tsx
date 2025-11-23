@@ -126,6 +126,90 @@ const MicLevelIndicator: React.FC<MicLevelProps> = ({ level, threshold, isActive
   );
 };
 
+// ═══════════════════════════════════════════════════════════════════════════
+// USER TYPE PROMPTS - Research-Aware Conversational Guides
+// ═══════════════════════════════════════════════════════════════════════════
+
+type UserType = 'expert' | 'general' | null;
+
+const EXPERT_PROMPT = `
+You are "MetaGuardian", conducting qualitative research through natural conversation with healthcare experts and professionals.
+
+## YOUR ROLE: PEER RESEARCHER
+
+You are speaking with a healthcare professional. Treat them as a peer. Your goal is to understand their perspectives on hybrid data tools that combine lifestyle and clinical data for diabetes management.
+
+## RESEARCH THEMES TO EXPLORE NATURALLY
+
+Do NOT ask these as discrete questions. Instead, weave them into natural conversation, following the expert's lead:
+
+1. **Data Utility**: What types of data do they find most useful? Do they use wearables data? How do they value lifestyle factors (sleep, diet, stress, exercise)?
+
+2. **Integration Concerns**: What concerns do they have about integrating rough lifestyle data with clinical data? Data quality issues?
+
+3. **Clinical Value**: How might hybrid data tools add value to their practice? What workflow benefits might they see?
+
+4. **Persuasive Design**: How do they feel about behavioral nudges (reminders, gamification) in health tools? Do these support or undermine clinical recommendations?
+
+5. **Adoption Barriers**: What technical, operational, or policy challenges do they anticipate? What standards would need to be in place?
+
+## CONVERSATION STYLE
+
+- Be collegial and professional - they are experts in their field
+- Ask follow-up questions based on their responses
+- If they answer multiple themes at once, acknowledge and move deeper
+- Prioritize depth over breadth - it's okay not to cover every theme
+- Use their terminology and match their level of technical detail
+- Share the prototype concept when appropriate and ask for specific feedback
+
+## OPENING
+
+Start by introducing yourself briefly, then ask about their role and experience with digital health tools or diabetes management. Let the conversation flow naturally from there.
+
+Remember: You are conducting research, not teaching. Listen more than you speak. Make inferences about what to explore next based on their responses.
+`;
+
+const GENERAL_PUBLIC_PROMPT = `
+You are "MetaGuardian", conducting qualitative research through natural, supportive conversation with members of the general public.
+
+## YOUR ROLE: EMPATHETIC LISTENER
+
+You are speaking with someone who may or may not have experience with health tracking tools. Your goal is to understand their perspectives on hybrid data tools that combine lifestyle and clinical information.
+
+## RESEARCH THEMES TO EXPLORE NATURALLY
+
+Do NOT ask these as discrete questions. Instead, let one topic flow into another naturally:
+
+1. **Current Practices**: How do they currently track their health and well-being? What works, what doesn't?
+
+2. **Digital Tool Familiarity**: Are they familiar with health apps, wearables, or other digital tools? What's their experience been?
+
+3. **Information Challenges**: Do they find clinical information (like blood test results) overwhelming or difficult to interpret?
+
+4. **Integration Appeal**: How do they feel about combining lifestyle data (sleep, stress, diet) with clinical results in one place?
+
+5. **Presentation Preferences**: Do they prefer simple summaries and visual indicators, or detailed numbers and medical terms? Why?
+
+6. **Trust Factors**: What makes health recommendations feel trustworthy and easy to understand?
+
+7. **Engagement**: What would make them stay engaged with a digital health tool long-term?
+
+## CONVERSATION STYLE
+
+- Be warm, supportive, and non-judgmental
+- Use accessible language - avoid medical jargon unless they use it first
+- Acknowledge their experiences and feelings
+- If they share concerns, explore them with curiosity
+- Make them feel comfortable sharing honest opinions
+- When discussing the prototype concept, focus on their reactions and preferences
+
+## OPENING
+
+Start with a friendly greeting, then gently ask about how they currently think about or manage their health. Let their responses guide where you go next.
+
+Remember: Everyone's experience is valid. There are no wrong answers. Your job is to understand their perspective, not to educate them.
+`;
+
 const QUANTUM_STORYTELLING_PROMPT = `
 You are "MetaGuardian", but not an assessor—you are a STORY MIDWIFE, helping metabolic health stories be born into the world. You work with David Boje's Quantum Storytelling framework.
 
@@ -432,6 +516,9 @@ const LiveVoiceCoach: React.FC<{ token: string }> = ({ token }) => {
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [showEarlyExitButton, setShowEarlyExitButton] = useState(false);
 
+  // User Type Selection State
+  const [userType, setUserType] = useState<UserType>(null);
+
   // PHASE 3: NEW STATE VARIABLES
   const [spectralAnalyzer, setSpectralAnalyzer] = useState<SpectralAnalyzer | null>(null);
   const [currentMicLevel, setCurrentMicLevel] = useState<number>(0);
@@ -655,15 +742,24 @@ const LiveVoiceCoach: React.FC<{ token: string }> = ({ token }) => {
         console.log('OpenAI Realtime Session Opened');
         setConnectionState(ConnectionState.CONNECTED);
 
-        // Initialize Session
+        // Initialize Session with appropriate prompt based on user type
+        const selectedPrompt = userType === 'expert' ? EXPERT_PROMPT :
+                               userType === 'general' ? GENERAL_PUBLIC_PROMPT :
+                               QUANTUM_STORYTELLING_PROMPT;
+
+        console.log(`🎯 Starting session with user type: ${userType}`);
+
         const sessionUpdate = {
             type: "session.update",
             session: {
                 modalities: ["text", "audio"],
-                instructions: QUANTUM_STORYTELLING_PROMPT,
+                instructions: selectedPrompt,
                 voice: "alloy",
                 input_audio_format: "pcm16",
                 output_audio_format: "pcm16",
+                input_audio_transcription: {
+                    model: "whisper-1"
+                },
                 turn_detection: {
                     type: "server_vad",
                     threshold: 0.5,
@@ -797,6 +893,17 @@ const LiveVoiceCoach: React.FC<{ token: string }> = ({ token }) => {
                       }
                       const args = JSON.parse(cleanArgs);
                       console.log("[DEBUG] Quantum Tool Args:", args);
+                      
+                      // Log inference metadata if present (from sidecar)
+                      if (args._inference_metadata) {
+                          console.log("🔍 [INFERENCE] Source:", args._inference_metadata.source, 
+                                      "| Model:", args._inference_metadata.model,
+                                      "| Confidence:", args._inference_metadata.confidence);
+                          if (args._inference_metadata.reasoning_trace) {
+                              console.log("💭 [REASONING]", args._inference_metadata.reasoning_trace);
+                          }
+                      }
+                      
                       setToolCallCount(prev => prev + 1);
                       
                       // ===================================================================
@@ -955,12 +1062,35 @@ const LiveVoiceCoach: React.FC<{ token: string }> = ({ token }) => {
                                         ...args.dimensions[dim]
                                     };
                                 });
+                                
+                                // UPDATE SCORE HISTORY (needed for trajectory chart)
+                                const elapsed = Math.floor((Date.now() - sessionStartTimeRef.current) / 1000);
+                                const newPoint = {
+                                    time: elapsed,
+                                    HL: updated.dimensions.HL?.score ?? 0,
+                                    CM: updated.dimensions.CM?.score ?? 0,
+                                    DI: updated.dimensions.DI?.score ?? 0,
+                                    DL: updated.dimensions.DL?.score ?? 0,
+                                    PR: updated.dimensions.PR?.score ?? 0
+                                };
+                                if (!updated.scoreHistory) updated.scoreHistory = [];
+                                updated.scoreHistory = [...updated.scoreHistory, newPoint];
                             }
                             
-                            // Track evidence log for backward compatibility
+                            // Track evidence log for backward compatibility (with deduplication)
                             if (args.newEvidence) {
                                 if (!updated.evidenceLog) updated.evidenceLog = [];
-                                updated.evidenceLog.push(args.newEvidence);
+                                
+                                // Deduplicate: Check if this exact evidence already exists
+                                const isDuplicate = updated.evidenceLog.some(existing => 
+                                    existing.dimension === args.newEvidence.dimension &&
+                                    existing.summary === args.newEvidence.summary &&
+                                    existing.timestamp === args.newEvidence.timestamp
+                                );
+                                
+                                if (!isDuplicate) {
+                                    updated.evidenceLog.push(args.newEvidence);
+                                }
                             }
                             
                             return updated;
@@ -1057,7 +1187,8 @@ const LiveVoiceCoach: React.FC<{ token: string }> = ({ token }) => {
         const response = await fetch(getApiUrl('/api/finalize-session'), {
             method: 'POST',
             headers: { 
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
                 email: userEmail,
@@ -1066,7 +1197,8 @@ const LiveVoiceCoach: React.FC<{ token: string }> = ({ token }) => {
                     evidenceLog: sessionState.evidenceLog,
                     strengths: sessionState.strengths,
                     developmentPriorities: sessionState.developmentPriorities,
-                    summary: sessionState.summary || "No summary available."
+                    summary: sessionState.summary || "No summary available.",
+                    scoreHistory: sessionState.scoreHistory
                 }
             })
         });
@@ -1118,7 +1250,53 @@ const LiveVoiceCoach: React.FC<{ token: string }> = ({ token }) => {
 
   return (
     <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 sm:p-8 w-full relative">
-      
+
+      {/* User Type Selection Screen */}
+      {userType === null && (
+        <div className="absolute inset-0 z-50 bg-white flex items-center justify-center rounded-2xl p-6">
+          <div className="w-full max-w-2xl animate-fade-in-up">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold text-slate-800 mb-2">Welcome to MetaGuardian</h2>
+              <p className="text-slate-600">Please select your background to help us tailor the conversation</p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Expert Card */}
+              <button
+                onClick={() => setUserType('expert')}
+                className="group p-6 bg-gradient-to-br from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 border-2 border-indigo-200 hover:border-indigo-400 rounded-xl text-left transition-all transform hover:scale-[1.02] hover:shadow-lg"
+              >
+                <div className="w-12 h-12 bg-indigo-600 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-bold text-slate-800 mb-2">Healthcare Expert</h3>
+                <p className="text-sm text-slate-600">
+                  Clinicians, researchers, health informaticists, or professionals working in healthcare settings
+                </p>
+              </button>
+
+              {/* General Public Card */}
+              <button
+                onClick={() => setUserType('general')}
+                className="group p-6 bg-gradient-to-br from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 border-2 border-emerald-200 hover:border-emerald-400 rounded-xl text-left transition-all transform hover:scale-[1.02] hover:shadow-lg"
+              >
+                <div className="w-12 h-12 bg-emerald-600 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-bold text-slate-800 mb-2">General Public</h3>
+                <p className="text-sm text-slate-600">
+                  Individuals interested in personal health tracking, wellness apps, or understanding health data
+                </p>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Email Modal */}
       {showEmailModal && (
         <div className="absolute inset-0 z-50 bg-white/90 backdrop-blur-sm flex items-center justify-center rounded-2xl p-6">
@@ -1318,8 +1496,8 @@ const LiveVoiceCoach: React.FC<{ token: string }> = ({ token }) => {
         {/* Initial Tips */}
         {connectionState === ConnectionState.DISCONNECTED && !errorMsg && (
           <div className="mt-4 p-4 bg-indigo-50 rounded-lg border border-indigo-100 text-indigo-800 text-sm text-center max-w-md">
-            <p className="font-medium mb-1">Ready for your assessment?</p>
-            <p className="opacity-80">I'll ask you about your work and experiences to build your cultural competency profile.</p>
+            <p className="font-medium mb-1">Ready to explore your health story?</p>
+            <p className="opacity-80">Start a voice conversation to discover your metabolic health narrative through quantum storytelling.</p>
           </div>
         )}
       </div>

@@ -24,8 +24,13 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess, onSwitchToLogin 
     setIsLoading(true);
     setError(null);
 
+    console.log('📝 Registration attempt for:', email);
+
     try {
-      const response = await fetch(getApiUrl('/api/register'), {
+      const url = getApiUrl('/api/register');
+      console.log('📡 Sending registration to:', url);
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -33,15 +38,19 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess, onSwitchToLogin 
         body: JSON.stringify({ email, password }),
       });
 
+      console.log('📥 Registration response:', response.status);
+
       if (!response.ok) {
         const data = await response.json();
+        console.error('❌ Registration failed:', data);
         throw new Error(data.detail || 'Registration failed');
       }
 
-      // Auto login or just redirect to login
+      console.log('✅ Registration successful');
       onRegisterSuccess();
     } catch (err: any) {
-      setError(err.message);
+      console.error('❌ Registration error:', err);
+      setError(err.message || 'Network error - check if backend is running');
     } finally {
       setIsLoading(false);
     }
