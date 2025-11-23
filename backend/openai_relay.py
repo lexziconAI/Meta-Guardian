@@ -32,8 +32,8 @@ logging.info(f"Module-level OPENAI_API_KEY: {OPENAI_API_KEY[:10] if OPENAI_API_K
 print(f"DEBUG: Module-level OPENAI_API_KEY: {OPENAI_API_KEY[:10] if OPENAI_API_KEY else 'None'}")
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-GROQ_MODEL = "moonshotai/kimi-k2-instruct-0905" # Kimi K2 on Groq
-# GROQ_MODEL = "llama-3.3-70b-versatile"
+# GROQ_MODEL = "moonshotai/kimi-k2-instruct-0905" # Kimi K2 - doesn't differentiate scores well
+GROQ_MODEL = "llama-3.3-70b-versatile"  # Better for structured scoring
 
 @router.websocket("/ws/openai-relay")
 async def openai_relay(websocket: WebSocket):
