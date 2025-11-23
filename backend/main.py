@@ -215,59 +215,223 @@ class FinalizeSessionRequest(schemas.BaseModel):
 @app.post("/api/finalize-session")
 async def finalize_session(request: FinalizeSessionRequest, db: Session = Depends(get_db)):
     try:
-        print(f"Finalizing session for {request.email}")
+        print(f"Finalizing quantum story session for {request.email}")
 
-        # --- Generate Comprehensive AI Report ---
+        # --- Generate Living Story Synthesis using Quantum Storytelling Framework ---
         groq_client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
         
-        # Helper to normalize score to 0-100
-        def get_score(dim_code):
-            val = request.assessment.get('dimensions', {}).get(dim_code, {}).get('score', 0)
-            # If score is 0-5, scale to 100. If already > 5, assume 100 scale.
-            return int(val * 20) if val <= 5 else int(val)
-
-        scores_text = "\n".join([
-            f"- Directness & Transparency (DT): {get_score('DT')}/100",
-            f"- Task vs Relational (TR): {get_score('TR')}/100",
-            f"- Conflict Orientation (CO): {get_score('CO')}/100",
-            f"- Cultural Adaptability (CA): {get_score('CA')}/100",
-            f"- Empathy & Perspective (EP): {get_score('EP')}/100"
-        ])
-
-        prompt = f"""
-        You are an expert Cultural Intelligence Coach. Write a comprehensive, personalized assessment report for a user based on their session data.
-        Output the report in clean HTML format (no markdown backticks, just the HTML content starting with <div>).
-
-        User Email: {request.email}
-
-        SCORES:
-        {scores_text}
-
-        SESSION SUMMARY: {request.assessment.get('summary', '')}
+        # Extract narrative streams data
+        narrative_streams = request.assessment.get('narrativeStreams', {})
+        fragments = request.assessment.get('allFragments', [])
+        phase = request.assessment.get('phase', 'CRYSTALLIZATION')
         
-        EVIDENCE LOG:
-        {json.dumps(request.assessment.get('evidenceLog', []), indent=2)}
+        # Calculate story qualities
+        def calculate_coherence(fragments_list):
+            """How well fragments connect into threads"""
+            if len(fragments_list) < 2:
+                return 0.0
+            entanglements = sum(len(f.get('entangledWith', [])) for f in fragments_list)
+            max_connections = len(fragments_list) * 2
+            return min(1.0, entanglements / max_connections)
+        
+        def calculate_fluidity(quantum_states):
+            """How much story is still becoming (high = more potential)"""
+            if not quantum_states:
+                return 1.0
+            # High fluidity when states are more evenly distributed (less certainty)
+            probs = [s.get('probability', 0) for s in quantum_states]
+            if not probs:
+                return 1.0
+            # Use entropy-like measure
+            max_prob = max(probs)
+            return 1.0 - (max_prob - 1/len(probs)) / (1 - 1/len(probs)) if len(probs) > 1 else 0.5
+        
+        def calculate_authenticity(yama_resonances):
+            """Alignment with Constitutional AI principles"""
+            if not yama_resonances:
+                return 0.5
+            alignment_count = sum(1 for y in yama_resonances if y.get('resonance') == 'harmony')
+            return alignment_count / len(yama_resonances)
+        
+        # Prepare narrative data for synthesis
+        stream_summaries = []
+        for stream_id, stream_data in narrative_streams.items():
+            if stream_data and stream_data.get('fragments'):
+                coherence = calculate_coherence(stream_data.get('fragments', []))
+                fluidity = calculate_fluidity(stream_data.get('possibleStates', []))
+                authenticity = stream_data.get('authenticity', 0.5)
+                
+                stream_summaries.append(f"""
+**{stream_data.get('streamName', stream_id)}**
+- Coherence: {coherence:.1%} (fragment connectivity)
+- Fluidity: {fluidity:.1%} (openness to becoming)
+- Authenticity: {authenticity:.1%} (lived truth alignment)
+- Fragments: {len(stream_data.get('fragments', []))}
+- Quantum States: {len(stream_data.get('possibleStates', []))}
+""")
+        
+        # CONSTITUTIONAL AI: Import validator for atomic validation
+        from backend.constitutional_ai import validate_story_synthesis, export_all_receipts
+        
+        # Build quantum storytelling synthesis prompt
+        story_synthesis_prompt = f"""
+You are synthesizing a LIVING HEALTH STORY using David Boje's Quantum Storytelling framework.
+This is NOT an assessment—it's witnessing a story-in-the-making.
 
-        REQUIREMENTS:
-        1. **Executive Summary**: A personalized overview of their performance.
-        2. **Dimension Analysis**: For EACH of the 5 dimensions (DT, TR, CO, CA, EP):
-           - Provide a clear **Definition** of the dimension.
-           - Display their **Score** (e.g., 85/100).
-           - Explain the score based on specific evidence from the log.
-        3. **Key Strengths**: Identify exactly **3** specific strengths shown in the session.
-        4. **Developmental Areas**: Identify exactly **3** specific areas for improvement.
-        5. **Practical Recommendations**: Provide **3** concrete, actionable steps they can take immediately.
-        6. **Reflection Questions**: Ask **4** deep, personalized questions to help them grow.
+⚠️ CONSTITUTIONAL GUARDRAILS (Yama Principles):
+1. Ahimsa: Never force a story the user isn't ready to tell
+2. Satya: Honor contradictions without resolution
+3. Asteya: The story belongs to the user
+4. Brahmacharya: Match depth to user's capacity  
+5. Aparigraha: Share patterns without claiming ownership
 
-        TONE: Professional, encouraging, insightful, and deeply tailored to the evidence provided.
-        FORMAT: Use <h2> for section headers, <h3> for subsections, <p> for text, and <ul>/<li> for lists. Use inline CSS for basic styling (e.g., color: #4f46e5 for headers).
-        IMPORTANT: DO NOT include any footer, copyright notice, or closing signature (e.g. "© 2024..."). The system will append the official footer automatically.
-        """
+## Session Data
+
+**User**: {request.email}
+**Story Phase**: {phase}
+
+**Narrative Streams**:
+{chr(10).join(stream_summaries)}
+
+**Antenarrative Fragments** (user's actual story bits):
+{json.dumps(fragments[:10], indent=2) if fragments else "No fragments captured yet"}
+
+**Overall Session**:
+- Total Fragments: {len(fragments)}
+- Turn Count: {request.assessment.get('turnCount', 0)}
+- Summary: {request.assessment.get('summary', '')}
+
+## Synthesis Guidelines (Critical - Read Carefully)
+
+### 1. HONOR ANTENARRATIVES (Don't Force Coherence)
+- Quote the user's EXACT speculative fragments
+- Preserve tensions and contradictions—do NOT resolve them
+- List multiple possible story endings (don't choose one)
+- Use language like "You said..." or "In your words..."
+
+### 2. EMBRACE QUANTUM SUPERPOSITION
+Present multiple simultaneous truths from quantum states:
+- Example: "You are BOTH 60% Empowered Tracker AND 30% Anxious Monitor AND 10% Compliant Patient"
+- Visualize probability distributions with styled percentage badges
+- Show which states conflict and which reinforce each other
+- NEVER force a single identity—honor the multiplicity
+
+### 3. MAP TEMPORAL ENTANGLEMENT
+Create a three-column temporal collapse view:
+- **LEFT COLUMN (Past)**: Health stories user references from their history
+- **CENTER COLUMN (Present)**: Current lived health experiences  
+- **RIGHT COLUMN (Future)**: Imagined health trajectories user is authoring
+
+Use visual metaphors like "Then → Now → Becoming" or "Memory ⟷ Moment ⟷ Possibility"
+
+### 4. SURFACE GRAND NARRATIVES
+Identify cultural/medical discourses the user negotiates with:
+- Medical Authority: Is user [accepting/resisting/negotiating/transforming]?
+- Quantified Self Movement: What's their stance?
+- Genetic Determinism: How does family history shape their story?
+- Wellness Industry: Do they buy in, push back, or selectively engage?
+
+Display as styled badges showing discourse + stance
+
+### 5. OFFER STORY PATHS (Not Prescriptions)
+Present 3 possible futures as story continuations (not recommendations):
+
+**Path A: [Evocative Name]**
+"If you continue this thread... [scenario that honors their current fragments]"
+
+**Path B: [Evocative Name]**  
+"If you explore this tension... [alternative possibility from contradictions]"
+
+**Path C: [Evocative Name]**
+"If you transform this pattern... [emergent potential from quantum states]"
+
+**CRITICAL**: Frame as "possible chapters," NOT "you should." The story belongs to the user.
+
+### 6. CONSTITUTIONAL AI: Yama Storytelling Ethics
+- **Ahimsa**: Never force a story the user isn't ready to tell
+- **Satya**: Honor contradictions—don't resolve them falsely  
+- **Asteya**: The story belongs to the user, not the system
+- **Brahmacharya**: Match narrative depth to user's emotional capacity
+- **Aparigraha**: Share story patterns without claiming ownership
+
+If user shows resistance or tension, ACKNOWLEDGE IT, don't fix it.
+
+## Output Format Requirements
+
+Generate HTML with **organic, fractal visual language** (NOT rigid clinical tables).
+
+**Visual Style Guide**:
+- Use flowing, rounded containers (border-radius: 16px+)
+- Gradient backgrounds for quantum state bubbles
+- Soft shadows for depth (box-shadow with 20%+ opacity)
+- Color palette: Deep purples (#4f46e5), teals (#06b6d4), ambers (#f59e0b)
+- Typography: Use em units, generous line-height (1.6+)
+- Quantum state probabilities as animated progress circles or bubbles
+- Temporal entanglement as 3-column grid with connecting lines/dots
+
+**Structure**:
+<div style="font-family: system-ui; max-width: 800px; margin: 0 auto; padding: 2rem;">
+  <h1 style="color: #4f46e5; font-size: 2em; margin-bottom: 0.5em;">Your Living Health Story</h1>
+  <p style="color: #64748b; font-style: italic; margin-bottom: 2em;">A quantum narrative synthesis · Story phase: {phase}</p>
+  
+  <section style="margin-bottom: 3em;">
+    <h2 style="color: #0f172a; border-left: 4px solid #4f46e5; padding-left: 1em;">Story-in-the-Making</h2>
+    <p style="line-height: 1.7; color: #334155;">[Synthesis of what emerged, honoring multiplicity]</p>
+  </section>
+  
+  <section style="margin-bottom: 3em;">
+    <h2 style="color: #0f172a; border-left: 4px solid #06b6d4; padding-left: 1em;">Quantum Superposition: Your Simultaneous Truths</h2>
+    [Quantum state bubbles with probabilities]
+  </section>
+  
+  <section style="margin-bottom: 3em;">
+    <h2 style="color: #0f172a; border-left: 4px solid #f59e0b; padding-left: 1em;">Temporal Entanglement</h2>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5em;">
+      <div><h3>Then (Past)</h3>[past stories]</div>
+      <div><h3>Now (Present)</h3>[present moments]</div>
+      <div><h3>Becoming (Future)</h3>[future imaginaries]</div>
+    </div>
+  </section>
+  
+  <section style="margin-bottom: 3em;">
+    <h2 style="color: #0f172a; border-left: 4px solid #8b5cf6; padding-left: 1em;">Grand Narratives You're Navigating</h2>
+    [Cultural discourse badges with stances]
+  </section>
+  
+  <section style="margin-bottom: 3em;">
+    <h2 style="color: #0f172a; border-left: 4px solid #10b981; padding-left: 1em;">Three Possible Story Paths</h2>
+    [Path A, B, C as cards with evocative names]
+  </section>
+  
+  <section style="margin-bottom: 3em;">
+    <h2 style="color: #0f172a; border-left: 4px solid #ec4899; padding-left: 1em;">Story Qualities</h2>
+    <div style="display: flex; gap: 2em;">
+      <div>
+        <div style="font-size: 2em; color: #4f46e5;">[coherence]%</div>
+        <div style="color: #64748b;">Coherence</div>
+      </div>
+      <div>
+        <div style="font-size: 2em; color: #06b6d4;">[fluidity]%</div>
+        <div style="color: #64748b;">Fluidity</div>
+      </div>
+      <div>
+        <div style="font-size: 2em; color: #f59e0b;">[authenticity]%</div>
+        <div style="color: #64748b;">Authenticity</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+**Tone**: Read as WITNESSING, not DIAGNOSING. Use present progressive tense ("you are becoming," "the story is emerging").
+**Language**: Poetic yet precise. Fractal/organic metaphors (roots, rivers, constellations), NOT clinical/corporate jargon.
+
+IMPORTANT: DO NOT include footer, copyright, or "© 2024" text. System adds official footer automatically.
+"""
 
         completion = await groq_client.chat.completions.create(
             model="moonshotai/kimi-k2-instruct-0905",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
+            messages=[{"role": "user", "content": story_synthesis_prompt}],
+            temperature=0.75,  # Slightly higher for creative narrative synthesis
             max_completion_tokens=4096
         )
         
@@ -275,8 +439,48 @@ async def finalize_session(request: FinalizeSessionRequest, db: Session = Depend
         # Strip markdown code blocks if present
         ai_report_html = ai_report_html.replace("```html", "").replace("```", "")
         
+        # ===================================================================
+        # CONSTITUTIONAL AI VALIDATION (ATOMIC OPERATION WITH RECEIPT)
+        # ===================================================================
+        validation_receipt = validate_story_synthesis(ai_report_html, fragments)
+        
+        print(f"\n✅ Constitutional Validation: {validation_receipt['summary']}")
+        print(f"📜 Receipt ID: {validation_receipt['receipt_id']}")
+        
+        if validation_receipt['validation_result'] == 'FAILED':
+            # Log violations but continue (for research audit trail)
+            for violation in validation_receipt['violations']:
+                print(f"  ⚠️  {violation['principle']}: {violation['explanation']}")
+        
+        # Export receipts for PhD documentation
+        from datetime import datetime
+        receipt_filename = f"constitutional_receipts_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        export_all_receipts(receipt_filename)
+        print(f"📂 Constitutional receipts exported: {receipt_filename}")
+        
+        # Attach Constitutional AI footer to report
+        constitutional_footer = f"""
+        <div style="margin-top: 40px; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                    border-radius: 8px; color: white; font-size: 11px;">
+            <div style="font-weight: bold; font-size: 14px; margin-bottom: 10px;">🛡️ Constitutional AI Validation</div>
+            <div style="opacity: 0.9;">
+                <strong>Receipt ID:</strong> {validation_receipt['receipt_id']}<br>
+                <strong>Status:</strong> {validation_receipt['validation_result']}<br>
+                <strong>Yama Principles:</strong> {len(validation_receipt['harmonies'])} in harmony, {len(validation_receipt['violations'])} requiring attention<br>
+                <strong>Validation Time:</strong> {validation_receipt['timestamp']}<br>
+            </div>
+            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.3); font-size: 10px; opacity: 0.7;">
+                This narrative synthesis was validated against Constitutional AI principles: Ahimsa (non-harm), 
+                Satya (truthfulness), Asteya (non-stealing), Brahmacharya (right energy), Aparigraha (non-attachment)
+            </div>
+        </div>
+        """
+        ai_report_html += constitutional_footer
+        
         # Inject into assessment data
         request.assessment['ai_report_html'] = ai_report_html
+        request.assessment['story_synthesis_mode'] = 'quantum'
+        request.assessment['constitutional_receipt_id'] = validation_receipt['receipt_id']
 
         # 2. Send Email
         success = send_assessment_email(request.email, request.assessment)
@@ -284,7 +488,7 @@ async def finalize_session(request: FinalizeSessionRequest, db: Session = Depend
         if not success:
             raise HTTPException(status_code=500, detail="Failed to send email report")
             
-        return {"status": "success", "message": "Report sent successfully"}
+        return {"status": "success", "message": "Living story synthesis sent successfully"}
     
     except HTTPException:
         raise
@@ -292,7 +496,7 @@ async def finalize_session(request: FinalizeSessionRequest, db: Session = Depend
         print(f"Error in finalize_session: {e}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Failed to generate or send report: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate or send story synthesis: {str(e)}")
 
 # --- Static Files (React App) ---
 # Serve static files from the 'dist' directory

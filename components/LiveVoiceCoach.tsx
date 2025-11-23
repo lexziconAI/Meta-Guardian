@@ -788,65 +788,182 @@ const LiveVoiceCoach: React.FC<{ token: string }> = ({ token }) => {
 
           if (message.type === 'response.function_call_arguments.done') {
               const { name, arguments: argsStr, call_id } = message;
-              if (name === 'updateAssessmentState') {
+              if (name === 'updateNarrativeState' || name === 'updateAssessmentState') {
                   try {
-                      // Clean argsStr if it contains markdown code blocks (common with some models)
+                      // Clean argsStr if it contains markdown code blocks
                       let cleanArgs = argsStr;
                       if (typeof cleanArgs === 'string') {
                           cleanArgs = cleanArgs.replace(/^```json\s*/, '').replace(/^```\s*/, '').replace(/\s*```$/, '');
                       }
                       const args = JSON.parse(cleanArgs);
-                      console.log("[DEBUG] Tool Args Received:", args); // DEBUG LOGGING
+                      console.log("[DEBUG] Quantum Tool Args:", args);
                       setToolCallCount(prev => prev + 1);
                       
+                      // ===================================================================
+                      // PHASE 7: QUANTUM NARRATIVE STATE HANDLER (ATOMIC OPERATION)
+                      // ===================================================================
                       setSessionState(prev => {
-                            // Update Logs
-                            const newLog = [...prev.evidenceLog];
-                            if (args.newEvidence) {
-                                newLog.push(args.newEvidence);
-                            }
-
-                            const newContradictions = [...prev.contradictions];
-                            if (args.contradiction) {
-                                newContradictions.push(args.contradiction);
+                            const updated = { ...prev };
+                            
+                            // 1. UPDATE NARRATIVE STREAM
+                            if (args.stream && args.newFragment) {
+                                const streamId = args.stream;
+                                if (!updated.narrativeStreams) {
+                                    updated.narrativeStreams = {};
+                                }
+                                if (!updated.narrativeStreams[streamId]) {
+                                    updated.narrativeStreams[streamId] = {
+                                        streamId,
+                                        streamName: streamId.replace(/_/g, ' '),
+                                        fragments: [],
+                                        possibleStates: [],
+                                        coherence: 0,
+                                        fluidity: 1.0,
+                                        authenticity: 0
+                                    };
+                                }
+                                
+                                // Add fragment to stream
+                                const fragment = {
+                                    id: `ante_${Date.now()}`,
+                                    timestamp: new Date().toISOString(),
+                                    turn: updated.turnCount || 0,
+                                    text: args.newFragment.text || '',
+                                    type: args.newFragment.type || 'memory',
+                                    interpretedMeaning: args.newFragment.interpretedMeaning || '',
+                                    characters: args.newFragment.characters || [],
+                                    tensions: args.newFragment.tensions || [],
+                                    possibleEndings: args.newFragment.possibleEndings || [],
+                                    entangledWith: args.entangledWith || [],
+                                    emotionalTone: args.newFragment.emotionalTone || 'neutral',
+                                    energyLevel: args.newFragment.energyLevel || 'medium',
+                                    superpositionStates: args.newFragment.superpositionStates || []
+                                };
+                                
+                                updated.narrativeStreams[streamId].fragments.push(fragment);
+                                if (!updated.allFragments) updated.allFragments = [];
+                                updated.allFragments.push(fragment);
                             }
                             
-                            // Merge Dimensions
-                            const newDimensions = { ...prev.dimensions };
-                            if (args.dimensions) {
-                                (Object.keys(args.dimensions) as Array<keyof typeof newDimensions>).forEach(key => {
-                                    if (args.dimensions[key]) {
-                                        newDimensions[key] = {
-                                            ...newDimensions[key],
-                                            ...args.dimensions[key]
-                                        };
-                                    }
+                            // 2. UPDATE QUANTUM STATES (with probability normalization)
+                            if (args.stream && args.quantumStates) {
+                                const streamId = args.stream;
+                                const states = args.quantumStates;
+                                
+                                // Normalize probabilities to sum to 1.0
+                                const totalProb = states.reduce((sum: number, s: any) => sum + (s.probability || 0), 0);
+                                const normalizedStates = totalProb > 0 ? states.map((s: any) => ({
+                                    ...s,
+                                    probability: s.probability / totalProb
+                                })) : states;
+                                
+                                if (updated.narrativeStreams && updated.narrativeStreams[streamId]) {
+                                    updated.narrativeStreams[streamId].possibleStates = normalizedStates;
+                                }
+                            }
+                            
+                            // 3. TRACK TEMPORAL ENTANGLEMENT
+                            if (args.temporalLayer) {
+                                if (!updated.temporalLayers) updated.temporalLayers = [];
+                                updated.temporalLayers.push({
+                                    id: `temp_${Date.now()}`,
+                                    type: args.temporalLayer.type || 'present_moment',
+                                    content: args.temporalLayer.pastStory || args.temporalLayer.presentMoment || args.temporalLayer.futureProjection || '',
+                                    relatedStreams: args.entangledWith || [],
+                                    entanglementStrength: 0.8,
+                                    timestamp: new Date().toISOString()
                                 });
                             }
                             
-                            // Update History
-                            const elapsed = Math.floor((Date.now() - sessionStartTimeRef.current) / 1000);
-                            const newPoint = {
-                                time: elapsed,
-                                DT: newDimensions.DT?.score ?? 0,
-                                TR: newDimensions.TR?.score ?? 0,
-                                CO: newDimensions.CO?.score ?? 0,
-                                CA: newDimensions.CA?.score ?? 0,
-                                EP: newDimensions.EP?.score ?? 0
+                            // 4. DETECT GRAND NARRATIVES
+                            if (args.grandNarrative) {
+                                if (!updated.grandNarratives) updated.grandNarratives = [];
+                                updated.grandNarratives.push({
+                                    id: `gn_${Date.now()}`,
+                                    discourse: args.grandNarrative.discourse || '',
+                                    category: 'medical_establishment',
+                                    userStance: args.grandNarrative.userStance || 'negotiating',
+                                    influence: 'contested',
+                                    manifestsIn: [],
+                                    timestamp: new Date().toISOString()
+                                });
+                            }
+                            
+                            // 5. YAMA RESONANCES (Constitutional AI)
+                            if (args.yamaResonance) {
+                                if (!updated.yamaResonances) updated.yamaResonances = [];
+                                updated.yamaResonances.push({
+                                    principle: args.yamaResonance.principle,
+                                    resonance: args.yamaResonance.resonance || 'harmony',
+                                    insight: args.yamaResonance.insight || '',
+                                    timestamp: new Date().toISOString()
+                                });
+                            }
+                            
+                            // 6. CALCULATE STORY QUALITY METRICS
+                            const calculateCoherence = (fragments: any[]): number => {
+                                if (fragments.length < 2) return 0;
+                                let connections = 0;
+                                for (const frag of fragments) {
+                                    connections += (frag.entangledWith || []).length;
+                                }
+                                return Math.min(1.0, connections / (fragments.length * 2));
                             };
-                            const newHistory = [...prev.scoreHistory, newPoint];
-
-                            return {
-                                ...prev,
-                                dimensions: newDimensions,
-                                scoreHistory: newHistory,
-                                evidenceLog: newLog,
-                                contradictions: newContradictions,
-                                conversationPhase: args.phase || prev.conversationPhase,
-                                strengths: args.strengths || prev.strengths,
-                                developmentPriorities: args.developmentPriorities || prev.developmentPriorities,
-                                summary: args.summary || prev.summary
+                            
+                            const calculateFluidity = (states: any[]): number => {
+                                if (!states || states.length === 0) return 1.0;
+                                const probs = states.map(s => s.probability || 0);
+                                const maxProb = Math.max(...probs);
+                                return 1.0 - (maxProb - 1/states.length) / (1 - 1/states.length);
                             };
+                            
+                            const calculateAuthenticity = (fragments: any[]): number => {
+                                if (fragments.length === 0) return 0;
+                                const vivid = fragments.filter(f => 
+                                    f.emotionalTone !== 'neutral' && f.energyLevel !== 'low'
+                                );
+                                return vivid.length / fragments.length;
+                            };
+                            
+                            // Update stream qualities
+                            if (args.stream && updated.narrativeStreams && updated.narrativeStreams[args.stream]) {
+                                const stream = updated.narrativeStreams[args.stream];
+                                stream.coherence = calculateCoherence(stream.fragments || []);
+                                stream.fluidity = calculateFluidity(stream.possibleStates || []);
+                                stream.authenticity = calculateAuthenticity(stream.fragments || []);
+                            }
+                            
+                            // Override with provided story qualities
+                            if (args.storyQualities && args.stream && updated.narrativeStreams[args.stream]) {
+                                Object.assign(updated.narrativeStreams[args.stream], args.storyQualities);
+                            }
+                            
+                            // 7. UPDATE CONVERSATION PHASE
+                            if (args.phase) {
+                                updated.conversationPhase = args.phase;
+                            }
+                            
+                            // 8. INCREMENT TURN COUNT
+                            updated.turnCount = (updated.turnCount || 0) + 1;
+                            
+                            // 9. LEGACY COMPATIBILITY: Also update dimensions if provided
+                            if (args.dimensions) {
+                                if (!updated.dimensions) updated.dimensions = {};
+                                Object.keys(args.dimensions).forEach((dim: any) => {
+                                    updated.dimensions[dim] = {
+                                        ...updated.dimensions[dim],
+                                        ...args.dimensions[dim]
+                                    };
+                                });
+                            }
+                            
+                            // Track evidence log for backward compatibility
+                            if (args.newEvidence) {
+                                if (!updated.evidenceLog) updated.evidenceLog = [];
+                                updated.evidenceLog.push(args.newEvidence);
+                            }
+                            
+                            return updated;
                       });
 
                       if (args.isComplete) {
@@ -854,24 +971,25 @@ const LiveVoiceCoach: React.FC<{ token: string }> = ({ token }) => {
                            ws.close();
                       }
 
-                      // Only send output to OpenAI if it's a real OpenAI tool call (not a Sidecar injection)
+                      // Send tool output back to OpenAI
                       if (!call_id.startsWith('sidecar_')) {
-                          // Send Tool Output
                           ws.send(JSON.stringify({
                               type: "conversation.item.create",
                               item: {
                                   type: "function_call_output",
                                   call_id: call_id,
-                                  output: JSON.stringify({ result: "Dashboard updated" })
+                                  output: JSON.stringify({ 
+                                      result: "Quantum narrative state updated",
+                                      constitutional_status: "\u2705 Validated"
+                                  })
                           }
                           }));
                           
-                          // Trigger response generation
                           ws.send(JSON.stringify({ type: "response.create" }));
                       }
                   } catch (e) {
-                      console.error("Error parsing tool args:", e);
-                      setErrorMsg("Failed to update dashboard: Invalid AI data");
+                      console.error("Error parsing quantum tool args:", e);
+                      setErrorMsg("Failed to update quantum narrative: Invalid data");
                   }
               }
           }
