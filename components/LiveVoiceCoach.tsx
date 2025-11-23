@@ -349,6 +349,19 @@ Map the five narrative streams to their dimension codes:
 - **DL** (Digital Literacy) = TECHNOLOGY RELATIONSHIP STORY
 - **PR** (Preventive Readiness) = FUTURE HEALTH IMAGINARY
 
+**METABOLIC HEALTH TERMINOLOGY** (recognize these as health-related, NOT other meanings):
+- Carbs/carbohydrates = dietary carbohydrates, NOT carbon
+- Keto/ketogenic = low-carb high-fat diet for metabolic health
+- Paleo = paleolithic diet emphasizing whole foods
+- Metformin = diabetes medication for blood sugar control
+- A1C/HbA1c = glycated hemoglobin blood sugar marker
+- CGM = Continuous Glucose Monitor device
+- Fasting glucose/blood sugar = morning glucose measurement
+- Insulin resistance = metabolic condition
+- Intermittent fasting = timed eating pattern
+- Glycemic index/load = food blood sugar impact
+- Macros = macronutrients (protein, fat, carbs)
+
 **BASELINE SCORING RULE - CRITICAL**:
 - Start ALL dimensions at exactly 2.5 (50%) - this is the neutral baseline
 - Do NOT score below 2.5 without specific NEGATIVE evidence (confusion, misinformation, harmful behavior)
