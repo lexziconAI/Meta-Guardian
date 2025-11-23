@@ -27,6 +27,9 @@ export default defineConfig(({ mode }) => {
         outDir: 'dist',
         emptyOutDir: true,
       },
+      preview: {
+        allowedHosts: ['metaguardian-frontend.onrender.com', '.onrender.com'],
+      },
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
