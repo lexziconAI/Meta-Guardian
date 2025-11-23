@@ -10,7 +10,7 @@ load_dotenv()
 
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
 SENDGRID_FROM_EMAIL = os.getenv("SENDGRID_FROM_EMAIL")
-SENDGRID_FROM_NAME = os.getenv("SENDGRID_FROM_NAME", "Culture Coach AI")
+SENDGRID_FROM_NAME = os.getenv("SENDGRID_FROM_NAME", "MetaGuardian Research")
 
 FOOTER_TEXT = "&copy; 2025 Axiom Intelligence – Interactive Oral Assessments as a Service (IOAaaS) Division"
 
@@ -30,7 +30,7 @@ def normalize_footer(html: str) -> str:
     return html
 
 def get_logo_base64_content():
-    logo_path = r"c:\Users\regan\ID SYSTEM\culture_coach\public\logo.png"
+    logo_path = r"c:\Users\regan\ID SYSTEM\MetaGuardian\public\logo.png"
     try:
         with open(logo_path, "rb") as image_file:
             encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
@@ -158,8 +158,8 @@ def generate_html_report(assessment_data):
         <div class="container">
             <div class="header">
                 {logo_html}
-                <h1 style="margin:0;">Cultural Intelligence Report</h1>
-                <p style="margin:5px 0 0 0; opacity: 0.9;">Your Personalized Assessment Results</p>
+                <h1 style="margin:0;">Research Interview Summary</h1>
+                <p style="margin:5px 0 0 0; opacity: 0.9;">MetaGuardian Qualitative Research Session</p>
             </div>
             
             <div class="content">
@@ -181,7 +181,7 @@ def send_assessment_email(to_email, assessment_data):
     message = Mail(
         from_email=(SENDGRID_FROM_EMAIL, SENDGRID_FROM_NAME),
         to_emails=to_email,
-        subject='Your Cultural Intelligence Assessment Report',
+        subject='Your MetaGuardian Research Interview Summary',
         html_content=html_content
     )
 

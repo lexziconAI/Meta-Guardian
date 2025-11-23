@@ -147,30 +147,29 @@ async def generate_report(request: schemas.ReportRequest, db: Session = Depends(
         return val * 20 if val <= 5 else val
 
     prompt = f"""
-    You are an expert Cultural Intelligence Coach. Write a comprehensive, personalized assessment report for a user based on their session data.
-    
-    User Email: {request.email}
-    
-    SCORES (0-100):
-    - Directness (DT): {get_score('DT')}
-    - Task/Relational (TR): {get_score('TR')}
-    - Conflict (CO): {get_score('CO')}
-    - Adaptability (CA): {get_score('CA')}
-    - Empathy (EP): {get_score('EP')}
-    
-    STRENGTHS: {', '.join(request.strengths)}
-    PRIORITIES: {', '.join(request.developmentPriorities)}
-    
-    EVIDENCE LOG:
+    You are a MetaGuardian qualitative research synthesizer. Create a comprehensive research interview summary based on the participant's session data.
+
+    Participant Email: {request.email}
+
+    KEY THEMES IDENTIFIED:
+    {', '.join(request.strengths) if request.strengths else 'None identified'}
+
+    AREAS FOR FURTHER EXPLORATION:
+    {', '.join(request.developmentPriorities) if request.developmentPriorities else 'None identified'}
+
+    INTERVIEW EVIDENCE LOG:
     {json.dumps(request.evidenceLog, indent=2)}
-    
-    SUMMARY: {request.summary}
-    
-    Please write a professional, encouraging, and actionable report in Markdown format.
+
+    SESSION SUMMARY: {request.summary}
+
+    Please write a professional research interview summary in Markdown format.
     Structure it with:
-    1. Executive Summary
-    2. Detailed Dimension Analysis (highlighting key evidence)
-    3. Actionable Development Plan
+    1. Executive Summary - Key insights from this research interview
+    2. Thematic Analysis - Main themes that emerged with supporting quotes/evidence
+    3. Participant Perspectives - Notable viewpoints and experiences shared
+    4. Research Implications - How this contributes to the research questions
+
+    Use an academic but accessible tone appropriate for qualitative research reporting.
     """
     
     try:
