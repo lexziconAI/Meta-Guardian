@@ -33,7 +33,10 @@ const DimensionRow: React.FC<{ code: string; data: any }> = ({ code, data }) => 
   // Normalize score: If raw score is <= 5, assume 0-5 scale and convert to 0-100.
   // Otherwise assume it's already 0-100.
   const score = rawScore <= 5 ? (rawScore / 5) * 100 : rawScore;
-  
+
+  // DEBUG: Log the actual scores being displayed
+  console.log(`[DimensionRow ${code}] rawScore=${rawScore}, normalized=${score}%`);
+
   const confidence = data.confidence || 'LOW';
   const trend = data.trend || 'stable';
 
@@ -153,23 +156,35 @@ const ContradictionPanel: React.FC<{ alerts: ContradictionAlert[] }> = ({ alerts
 };
 
 const ScoreEvolutionChart: React.FC<{ history: SessionState['scoreHistory'] }> = ({ history }) => {
-  const labels = history.map(h => {
+  // For single data point, duplicate it to create a visible baseline
+  const displayHistory = history.length === 1
+    ? [history[0], { ...history[0], time: history[0].time + 1 }]
+    : history;
+
+  const labels = displayHistory.map(h => {
     const mins = Math.floor(h.time / 60);
     const secs = h.time % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   });
 
   // Helper to normalize history points (0-5 scale to 0-100%)
-  const normalize = (val: number) => val <= 5 ? (val / 5) * 100 : val;
+  // Handles undefined/null/NaN edge cases
+  const normalize = (val: number): number => {
+    if (val === undefined || val === null || typeof val !== 'number' || Number.isNaN(val)) {
+      return 50; // Default to middle of range
+    }
+    const normalized = val <= 5 ? (val / 5) * 100 : val;
+    return Math.max(0, Math.min(100, normalized)); // Clamp to 0-100
+  };
 
   const data = {
     labels,
     datasets: [
-      { label: 'Health Literacy (HL)', data: history.map(h => normalize(h.HL)), borderColor: '#ef4444', backgroundColor: '#ef4444', tension: 0.4, pointRadius: 4, borderWidth: 2.5 },
-      { label: 'Clinical Markers (CM)', data: history.map(h => normalize(h.CM)), borderColor: '#f59e0b', backgroundColor: '#f59e0b', tension: 0.4, pointRadius: 4, borderWidth: 2.5 },
-      { label: 'Data Integration (DI)', data: history.map(h => normalize(h.DI)), borderColor: '#10b981', backgroundColor: '#10b981', tension: 0.4, pointRadius: 4, borderWidth: 2.5 },
-      { label: 'Digital Literacy (DL)', data: history.map(h => normalize(h.DL)), borderColor: '#3b82f6', backgroundColor: '#3b82f6', tension: 0.4, pointRadius: 4, borderWidth: 2.5 },
-      { label: 'Preventive Readiness (PR)', data: history.map(h => normalize(h.PR)), borderColor: '#8b5cf6', backgroundColor: '#8b5cf6', tension: 0.4, pointRadius: 4, borderWidth: 2.5 },
+      { label: 'Health Literacy (HL)', data: displayHistory.map(h => normalize(h.HL)), borderColor: '#ef4444', backgroundColor: '#ef4444', tension: 0.4, pointRadius: 4, borderWidth: 2.5 },
+      { label: 'Clinical Markers (CM)', data: displayHistory.map(h => normalize(h.CM)), borderColor: '#f59e0b', backgroundColor: '#f59e0b', tension: 0.4, pointRadius: 4, borderWidth: 2.5 },
+      { label: 'Data Integration (DI)', data: displayHistory.map(h => normalize(h.DI)), borderColor: '#10b981', backgroundColor: '#10b981', tension: 0.4, pointRadius: 4, borderWidth: 2.5 },
+      { label: 'Digital Literacy (DL)', data: displayHistory.map(h => normalize(h.DL)), borderColor: '#3b82f6', backgroundColor: '#3b82f6', tension: 0.4, pointRadius: 4, borderWidth: 2.5 },
+      { label: 'Preventive Readiness (PR)', data: displayHistory.map(h => normalize(h.PR)), borderColor: '#8b5cf6', backgroundColor: '#8b5cf6', tension: 0.4, pointRadius: 4, borderWidth: 2.5 },
     ]
   };
 

@@ -349,12 +349,32 @@ Map the five narrative streams to their dimension codes:
 - **DL** (Digital Literacy) = TECHNOLOGY RELATIONSHIP STORY
 - **PR** (Preventive Readiness) = FUTURE HEALTH IMAGINARY
 
-Score meanings: 0=none, 1=minimal, 2=developing, 3=moderate, 4=strong, 5=expert
+**BASELINE SCORING RULE - CRITICAL**:
+- Start ALL dimensions at exactly 2.5 (50%) - this is the neutral baseline
+- Do NOT score below 2.5 without specific NEGATIVE evidence (confusion, misinformation, harmful behavior)
+- Only adjust scores when you have ACTUAL evidence from the conversation
+- If no evidence for a dimension yet, keep it at 2.5
+
+**SCORING GUIDANCE - BE GENEROUS WITH DEMONSTRATED COMPETENCE:**
+- 0-1 = ONLY for demonstrated confusion, misinformation, or harmful practices
+- 2 = Significant gaps in understanding with some awareness
+- 2.5 = Neutral baseline (DEFAULT - 50%) - NO evidence yet
+- 3 = Some positive indicators, basic understanding shown
+- 4 = **Strong** - User demonstrates clear knowledge, uses correct terminology, shows active engagement
+- 5 = **Expert** - Deep understanding, nuanced insights, could teach others
+
+**IMPORTANT**: If a user demonstrates ANY of these, score at least 4:
+- Uses correct medical/technical terminology
+- Describes personal experience with the topic
+- Shows proactive behavior (tracking, monitoring, lifestyle changes)
+- Asks informed questions
+
+**NEVER score below 2.5 unless you have explicit evidence of problems.**
 
 ### CRITICAL PROTOCOL - FAILURE TO FOLLOW = UI CRASH:
 1. **FREQUENCY**: Call \`updateAssessmentState\` after EVERY SINGLE user response
 2. **ALL DIMENSIONS MANDATORY**: You MUST include ALL 5 dimensions (HL, CM, DI, DL, PR) in EVERY call
-   - If you have no evidence for a dimension, set score to current value (start at 3) and confidence to "LOW"
+   - If you have no evidence for a dimension, set score to current value (start at 2.5) and confidence to "LOW"
    - NEVER OMIT ANY DIMENSION - the UI requires all 5 to render correctly
 3. **EVIDENCE**: Always include newEvidence with a summary of what you observed
 
@@ -394,15 +414,12 @@ const updateAssessmentStateTool = {
     properties: {
       dimensions: {
         type: "object",
-        description: "Current scores for ALL five metabolic health readiness dimensions. YOU MUST INCLUDE ALL 5.",
-        required: ["HL", "CM", "DI", "DL", "PR"],
-        additionalProperties: false,
         properties: {
-          HL: { type: "object", required: ["score", "confidence", "evidenceCount", "trend"], properties: { score: { type: "number" }, confidence: { type: "string" }, evidenceCount: { type: "number" }, trend: { type: "string" } } },
-          CM: { type: "object", required: ["score", "confidence", "evidenceCount", "trend"], properties: { score: { type: "number" }, confidence: { type: "string" }, evidenceCount: { type: "number" }, trend: { type: "string" } } },
-          DI: { type: "object", required: ["score", "confidence", "evidenceCount", "trend"], properties: { score: { type: "number" }, confidence: { type: "string" }, evidenceCount: { type: "number" }, trend: { type: "string" } } },
-          DL: { type: "object", required: ["score", "confidence", "evidenceCount", "trend"], properties: { score: { type: "number" }, confidence: { type: "string" }, evidenceCount: { type: "number" }, trend: { type: "string" } } },
-          PR: { type: "object", required: ["score", "confidence", "evidenceCount", "trend"], properties: { score: { type: "number" }, confidence: { type: "string" }, evidenceCount: { type: "number" }, trend: { type: "string" } } },
+          HL: { type: "object", properties: { score: { type: "number" }, confidence: { type: "string" }, evidenceCount: { type: "number" }, trend: { type: "string" } } },
+          CM: { type: "object", properties: { score: { type: "number" }, confidence: { type: "string" }, evidenceCount: { type: "number" }, trend: { type: "string" } } },
+          DI: { type: "object", properties: { score: { type: "number" }, confidence: { type: "string" }, evidenceCount: { type: "number" }, trend: { type: "string" } } },
+          DL: { type: "object", properties: { score: { type: "number" }, confidence: { type: "string" }, evidenceCount: { type: "number" }, trend: { type: "string" } } },
+          PR: { type: "object", properties: { score: { type: "number" }, confidence: { type: "string" }, evidenceCount: { type: "number" }, trend: { type: "string" } } },
         }
       },
       newEvidence: {
@@ -1009,7 +1026,8 @@ const LiveVoiceCoach: React.FC<{ token: string }> = ({ token }) => {
 
                                 requiredDims.forEach(dim => {
                                     if (!updated.dimensions[dim]) {
-                                        updated.dimensions[dim] = { score: 0, confidence: 'LOW', evidenceCount: 0, trend: 'stable' };
+                                        // Use baseline of 2.5 (50%) for neutral starting point
+                                        updated.dimensions[dim] = { score: 2.5, confidence: 'LOW', evidenceCount: 0, trend: 'stable' };
                                     }
                                 });
 

@@ -107,14 +107,5 @@ export interface SessionState extends MetabolicAssessment {
   turnCount: number;
 }
 
-export const INITIAL_SESSION_STATE: SessionState = {
-  dimensions: {},
-  confidence: 0,
-  timestamp: new Date().toISOString(),
-  phase: 'OPENING',
-  isComplete: false,
-  evidenceLog: [],
-  strengths: [],
-  developmentPriorities: [],
-  turnCount: 0
-};
+// NOTE: Use INITIAL_SESSION_STATE from /types.ts instead
+// This file's SessionState is deprecated - use the root types.ts

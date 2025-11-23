@@ -88,13 +88,13 @@ export interface SessionState {
 
 export const INITIAL_SESSION_STATE: SessionState = {
   dimensions: {
-    HL: { score: 3.0, confidence: 'LOW', evidenceCount: 0, trend: 'stable' },
-    CM: { score: 3.0, confidence: 'LOW', evidenceCount: 0, trend: 'stable' },
-    DI: { score: 3.0, confidence: 'LOW', evidenceCount: 0, trend: 'stable' },
-    DL: { score: 3.0, confidence: 'LOW', evidenceCount: 0, trend: 'stable' },
-    PR: { score: 3.0, confidence: 'LOW', evidenceCount: 0, trend: 'stable' },
+    HL: { score: 2.5, confidence: 'LOW', evidenceCount: 0, trend: 'stable' },
+    CM: { score: 2.5, confidence: 'LOW', evidenceCount: 0, trend: 'stable' },
+    DI: { score: 2.5, confidence: 'LOW', evidenceCount: 0, trend: 'stable' },
+    DL: { score: 2.5, confidence: 'LOW', evidenceCount: 0, trend: 'stable' },
+    PR: { score: 2.5, confidence: 'LOW', evidenceCount: 0, trend: 'stable' },
   },
-  scoreHistory: [{ time: 0, HL: 3, CM: 3, DI: 3, DL: 3, PR: 3 }],
+  scoreHistory: [{ time: 0, HL: 2.5, CM: 2.5, DI: 2.5, DL: 2.5, PR: 2.5 }],
   evidenceLog: [],
   contradictions: [],
   conversationPhase: 'OPENING',

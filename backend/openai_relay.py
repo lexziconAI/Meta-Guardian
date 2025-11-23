@@ -81,9 +81,49 @@ Analyze the user's responses for:
 - DL: Digital Literacy (tech comfort, app usage, data interpretation)
 - PR: Preventive Readiness (lifestyle changes, goal setting, sustained action)
 
+**METABOLIC HEALTH TERMINOLOGY** (recognize these as health-related, NOT other meanings):
+- Carbs/carbohydrates = dietary carbohydrates, NOT carbon
+- Keto/ketogenic = low-carb high-fat diet for metabolic health
+- Paleo = paleolithic diet emphasizing whole foods
+- Metformin = diabetes medication for blood sugar control
+- A1C/HbA1c = glycated hemoglobin blood sugar marker
+- CGM = Continuous Glucose Monitor device
+- Fasting glucose/blood sugar = morning glucose measurement
+- Insulin resistance = metabolic condition
+- Intermittent fasting = timed eating pattern
+- Glycemic index/load = food blood sugar impact
+- Macros = macronutrients (protein, fat, carbs)
+
+**FULL CONVERSATION ANALYSIS**:
+- Analyze the ENTIRE conversation history, not just the latest turn
+- Look for patterns, contradictions, and evolving understanding across all turns
+- If user contradicts earlier statements, note this in the "contradiction" field
+- Build a holistic picture of the user's metabolic health readiness
+
 IMPORTANT: You MUST include the "newEvidence" object in your response for EVERY turn. If there is no strong evidence, provide a "contextual" observation.
 Be strict with JSON format. Do not include markdown formatting.
-Scores are on a 0-5 scale where: 0=none, 1=minimal, 2=developing, 3=moderate, 4=strong, 5=expert
+
+**BASELINE SCORING RULE - CRITICAL**:
+- Start ALL dimensions at exactly 2.5 (50%) - this is the neutral baseline
+- Do NOT score below 2.5 without specific NEGATIVE evidence (confusion, misinformation, harmful behavior)
+- Only adjust scores when you have ACTUAL evidence from the conversation
+- If no evidence for a dimension yet, keep it at 2.5
+
+**SCORING GUIDANCE - BE GENEROUS WITH DEMONSTRATED COMPETENCE:**
+- 0-1 = ONLY for demonstrated confusion, misinformation, or harmful practices
+- 2 = Significant gaps in understanding with some awareness
+- 2.5 = Neutral baseline (DEFAULT - 50%) - NO evidence yet
+- 3 = Some positive indicators, basic understanding shown
+- 4 = **Strong** - User demonstrates clear knowledge, uses correct terminology, shows active engagement
+- 5 = **Expert** - Deep understanding, nuanced insights, could teach others
+
+**IMPORTANT**: If a user demonstrates ANY of these, score at least 4:
+- Uses correct medical/technical terminology
+- Describes personal experience with the topic
+- Shows proactive behavior (tracking, monitoring, lifestyle changes)
+- Asks informed questions
+
+**NEVER score below 2.5 unless you have explicit evidence of problems.**
 """
 
     # Robust Key Loading
