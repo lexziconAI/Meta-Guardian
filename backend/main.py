@@ -424,6 +424,7 @@ Generate HTML with **organic, fractal visual language** (NOT rigid clinical tabl
 - Typography: Use em units, generous line-height (1.6+)
 - Quantum state probabilities as animated progress circles or bubbles
 - Temporal entanglement as 3-column grid with connecting lines/dots
+- **CRITICAL**: NEVER use white (#fff, #ffffff, white) or near-white text colors. All text must be dark and readable on white/light backgrounds. Use #0f172a for headers, #334155 for body text, #64748b for muted text.
 
 **Structure**:
 <div style="font-family: system-ui; max-width: 800px; margin: 0 auto; padding: 2rem;">
