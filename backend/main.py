@@ -238,6 +238,40 @@ async def finalize_session(request: FinalizeSessionRequest, db: Session = Depend
         narrative_streams = request.assessment.get('narrativeStreams', {})
         fragments = request.assessment.get('allFragments', [])
         phase = request.assessment.get('phase', 'CRYSTALLIZATION')
+
+        # Extract dimension scores and evidence (fallback data when narrative streams are empty)
+        dimensions = request.assessment.get('dimensions', {})
+        evidence_log = request.assessment.get('evidenceLog', [])
+        strengths = request.assessment.get('strengths', [])
+        development_priorities = request.assessment.get('developmentPriorities', [])
+
+        # Format dimensions for prompt
+        dimension_labels = {
+            'HL': 'Health Literacy',
+            'CM': 'Clinical Markers',
+            'DI': 'Data Integration',
+            'DL': 'Digital Literacy',
+            'PR': 'Preventive Readiness'
+        }
+
+        dimension_summaries = []
+        for dim_code, dim_data in dimensions.items():
+            if dim_data:
+                score = dim_data.get('score', 2.5)
+                confidence = dim_data.get('confidence', 'LOW')
+                evidence_count = dim_data.get('evidenceCount', 0)
+                trend = dim_data.get('trend', 'stable')
+                label = dimension_labels.get(dim_code, dim_code)
+                dimension_summaries.append(f"- {label}: {score}/5 ({confidence} confidence, {evidence_count} evidence points, trend: {trend})")
+
+        # Format evidence log
+        evidence_summaries = []
+        for ev in evidence_log[:10]:  # Limit to 10 most recent
+            if ev:
+                dim = dimension_labels.get(ev.get('dimension', ''), ev.get('dimension', ''))
+                ev_type = ev.get('type', 'contextual')
+                summary = ev.get('summary', '')
+                evidence_summaries.append(f"- [{dim}] ({ev_type}): {summary}")
         
         # Calculate story qualities
         def calculate_coherence(fragments_list):
@@ -303,8 +337,17 @@ This is NOT an assessment—it's witnessing a story-in-the-making.
 **User**: {request.email}
 **Story Phase**: {phase}
 
+**Metabolic Health Readiness Scores**:
+{chr(10).join(dimension_summaries) if dimension_summaries else "No dimension scores yet"}
+
+**Evidence Collected**:
+{chr(10).join(evidence_summaries) if evidence_summaries else "No evidence collected yet"}
+
+**Strengths Identified**: {', '.join(strengths) if strengths else 'None identified yet'}
+**Development Priorities**: {', '.join(development_priorities) if development_priorities else 'None identified yet'}
+
 **Narrative Streams**:
-{chr(10).join(stream_summaries)}
+{chr(10).join(stream_summaries) if stream_summaries else "No narrative streams captured yet"}
 
 **Antenarrative Fragments** (user's actual story bits):
 {json.dumps(fragments[:10], indent=2) if fragments else "No fragments captured yet"}

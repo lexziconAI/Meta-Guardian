@@ -1185,12 +1185,21 @@ const LiveVoiceCoach: React.FC<{ token: string }> = ({ token }) => {
             body: JSON.stringify({
                 email: userEmail,
                 assessment: {
+                    // Original assessment data
                     dimensions: sessionState.dimensions,
                     evidenceLog: sessionState.evidenceLog,
                     strengths: sessionState.strengths,
                     developmentPriorities: sessionState.developmentPriorities,
                     summary: sessionState.summary || "No summary available.",
-                    scoreHistory: sessionState.scoreHistory
+                    scoreHistory: sessionState.scoreHistory,
+                    // Quantum storytelling data (required by backend)
+                    narrativeStreams: sessionState.narrativeStreams || {},
+                    allFragments: sessionState.allFragments || [],
+                    phase: sessionState.conversationPhase || 'OPENING',
+                    temporalLayers: sessionState.temporalLayers || [],
+                    grandNarratives: sessionState.grandNarratives || [],
+                    yamaResonances: sessionState.yamaResonances || [],
+                    turnCount: sessionState.turnCount || 0
                 }
             })
         });
