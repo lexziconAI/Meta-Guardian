@@ -1052,11 +1052,11 @@ const LiveVoiceCoach: React.FC<{ token: string }> = ({ token }) => {
                                 const elapsed = Math.floor((Date.now() - sessionStartTimeRef.current) / 1000);
                                 const newPoint = {
                                     time: elapsed,
-                                    HL: updated.dimensions.HL?.score ?? 0,
-                                    CM: updated.dimensions.CM?.score ?? 0,
-                                    DI: updated.dimensions.DI?.score ?? 0,
-                                    DL: updated.dimensions.DL?.score ?? 0,
-                                    PR: updated.dimensions.PR?.score ?? 0
+                                    HL: updated.dimensions.HL?.score ?? 2.5,
+                                    CM: updated.dimensions.CM?.score ?? 2.5,
+                                    DI: updated.dimensions.DI?.score ?? 2.5,
+                                    DL: updated.dimensions.DL?.score ?? 2.5,
+                                    PR: updated.dimensions.PR?.score ?? 2.5
                                 };
                                 if (!updated.scoreHistory) updated.scoreHistory = [];
                                 updated.scoreHistory = [...updated.scoreHistory, newPoint];

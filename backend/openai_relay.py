@@ -74,6 +74,12 @@ The JSON structure is:
   "developmentPriorities": ["priority1", "priority2"]
 }
 
+**CRITICAL: ALL 5 DIMENSIONS REQUIRED**
+You MUST include ALL 5 dimensions (HL, CM, DI, DL, PR) in EVERY response.
+- If you have no evidence for a dimension, set score to 2.5 (baseline) and confidence to "LOW"
+- NEVER omit any dimension - the UI will break if you do
+- Always include the complete dimensions object with all 5 keys
+
 Analyze the user's responses for:
 - HL: Health Literacy (understanding of diabetes, glucose monitoring, nutrition)
 - CM: Clinical Markers (A1C knowledge, glucose patterns, medication awareness)
