@@ -30,14 +30,31 @@ def normalize_footer(html: str) -> str:
     return html
 
 def get_logo_base64_content():
-    logo_path = r"c:\Users\regan\ID SYSTEM\MetaGuardian\public\logo.png"
-    try:
-        with open(logo_path, "rb") as image_file:
-            encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-            return encoded_string
-    except Exception as e:
-        print(f"Error loading logo: {e}")
-        return None
+    # Use path relative to this file to work in both Windows and WSL
+    import pathlib
+    current_dir = pathlib.Path(__file__).parent.parent  # Go up from backend/ to MetaGuardian/
+    logo_path = current_dir / "public" / "logo.png"
+
+    # Fallback paths for different environments
+    fallback_paths = [
+        logo_path,
+        pathlib.Path("/mnt/c/Users/regan/ID SYSTEM/MetaGuardian/public/logo.png"),
+        pathlib.Path(r"c:\Users\regan\ID SYSTEM\MetaGuardian\public\logo.png"),
+    ]
+
+    for path in fallback_paths:
+        try:
+            if path.exists():
+                with open(path, "rb") as image_file:
+                    encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                    print(f"Logo loaded successfully from: {path}")
+                    return encoded_string
+        except Exception as e:
+            print(f"Failed to load logo from {path}: {e}")
+            continue
+
+    print("Error: Logo not found in any expected location")
+    return None
 
 def generate_html_report(assessment_data):
     """
