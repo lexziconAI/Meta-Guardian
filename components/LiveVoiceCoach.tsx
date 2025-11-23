@@ -336,169 +336,98 @@ The Yama principles guide HOW you midwife stories:
 
 ---
 
-## SYSTEM INTEGRATION
+## SYSTEM INTEGRATION - REAL-TIME SCORING
 
-You are connected to a living story visualization dashboard.
-**You MUST use the \`updateNarrativeState\` tool after EVERY user response.**
+You are connected to a real-time visualization dashboard.
+**You MUST use the \`updateAssessmentState\` tool after EVERY user response.**
+
+### DIMENSION SCORING (0-5 scale):
+Map the five narrative streams to their dimension codes:
+- **HL** (Health Literacy) = BODY KNOWLEDGE STREAM
+- **CM** (Clinical Markers) = BIOMARKER MYTHOLOGY STREAM
+- **DI** (Data Integration) = DATA SYNTHESIS NARRATIVE
+- **DL** (Digital Literacy) = TECHNOLOGY RELATIONSHIP STORY
+- **PR** (Preventive Readiness) = FUTURE HEALTH IMAGINARY
+
+Score meanings: 0=none, 1=minimal, 2=developing, 3=moderate, 4=strong, 5=expert
+
+### CRITICAL PROTOCOL:
+1. **FREQUENCY**: Call \`updateAssessmentState\` after EVERY SINGLE user response
+2. **ALL DIMENSIONS**: Always include all 5 dimensions (HL, CM, DI, DL, PR) in each call
+3. **EVIDENCE**: Always include newEvidence with a summary of what you observed
 
 ### TOOL CALL STRUCTURE:
 \`\`\`json
 {
-  "stream": "BODY_KNOWLEDGE" | "BIOMARKER_MYTHOLOGY" | "DATA_SYNTHESIS" | "TECHNOLOGY_RELATIONSHIP" | "FUTURE_HEALTH_IMAGINARY",
-  "newFragment": {
-    "text": "User's exact words",
-    "type": "memory" | "speculation" | "contradiction" | "desire" | "fear" | "bet" | "turning_point",
-    "tensions": ["tension1", "tension2"],
-    "possibleEndings": ["ending1", "ending2", "ending3"]
+  "dimensions": {
+    "HL": { "score": 3, "confidence": "LOW|MEDIUM|HIGH", "evidenceCount": 1, "trend": "up|down|stable" },
+    "CM": { "score": 2, "confidence": "LOW", "evidenceCount": 0, "trend": "stable" },
+    "DI": { "score": 3, "confidence": "LOW", "evidenceCount": 0, "trend": "stable" },
+    "DL": { "score": 4, "confidence": "MEDIUM", "evidenceCount": 1, "trend": "up" },
+    "PR": { "score": 2, "confidence": "LOW", "evidenceCount": 0, "trend": "stable" }
   },
-  "quantumStates": [
-    { "state": "State Name", "probability": 0.6 },
-    { "state": "State Name", "probability": 0.3 },
-    { "state": "State Name", "probability": 0.1 }
-  ],
-  "temporalLayer": {
-    "pastStory": "What user said about past",
-    "presentMoment": "What's happening now",
-    "futureProjection": "What user imagines"
+  "newEvidence": {
+    "dimension": "HL",
+    "type": "positive|negative|contextual",
+    "summary": "User demonstrated understanding of glucose patterns",
+    "timestamp": "0:45"
   },
-  "grandNarrative": {
-    "discourse": "Medical authority" | "Quantified self" | etc.,
-    "userStance": "accepting" | "resisting" | "negotiating"
-  },
-  "yamaResonance": {
-    "principle": "Ahimsa" | "Satya" | "Asteya" | "Brahmacharya" | "Aparigraha",
-    "resonance": "harmony" | "tension" | "exploration",
-    "insight": "What this reveals"
-  },
-  "phase": "INVOCATION" | "EMERGENCE" | "ENTANGLEMENT" | "CRYSTALLIZATION" | "OPENING"
+  "phase": "OPENING|CORE|GAP_FILLING|VALIDATION|CLOSING",
+  "summary": "Brief summary of session so far",
+  "strengths": ["HL", "DL"],
+  "developmentPriorities": ["CM", "PR"]
 }
 \`\`\`
 
-**DO NOT speak about the tracking.** Just use the tool to visualize the living story. Keep conversation natural and story-focused.
+**DO NOT speak about the scoring.** Keep conversation natural and story-focused while tracking internally.
 `;
 
-const updateNarrativeStateTool = {
+// Tool definition matching Culture Coach's working pattern
+const updateAssessmentStateTool = {
   type: "function",
-  name: "updateNarrativeState",
-  description: "Updates the living story visualization with new antenarrative fragments, quantum states, and temporal entanglements.",
+  name: "updateAssessmentState",
+  description: "Updates the real-time assessment visualization with dimension scores and evidence.",
   parameters: {
     type: "object",
     properties: {
-      stream: { 
-        type: "string", 
-        enum: ["BODY_KNOWLEDGE", "BIOMARKER_MYTHOLOGY", "DATA_SYNTHESIS", "TECHNOLOGY_RELATIONSHIP", "FUTURE_HEALTH_IMAGINARY"],
-        description: "Which narrative stream this update affects"
-      },
-      newFragment: {
+      dimensions: {
         type: "object",
-        description: "A new story fragment from the user's response",
+        description: "Current scores for all five metabolic health readiness dimensions",
         properties: {
-          text: { type: "string", description: "User's exact words (direct quote)" },
-          interpretedMeaning: { type: "string", description: "AI's reading of the fragment" },
-          type: { 
-            type: "string", 
-            enum: ["memory", "speculation", "contradiction", "desire", "fear", "bet", "turning_point"],
-            description: "What kind of antenarrative this is"
-          },
-          characters: { 
-            type: "array", 
-            items: { type: "string" },
-            description: "Who appears in this story? (self, doctor, family, 'my body')"
-          },
-          tensions: { 
-            type: "array", 
-            items: { type: "string" },
-            description: "Unresolved conflicts within the fragment"
-          },
-          possibleEndings: { 
-            type: "array", 
-            items: { type: "string" },
-            description: "Where this story thread might go (3 options)"
-          },
-          emotionalTone: {
-            type: "string",
-            enum: ["hopeful", "anxious", "curious", "resistant", "empowered", "defeated", "neutral"]
-          },
-          energyLevel: {
-            type: "string",
-            enum: ["high", "medium", "low"]
-          }
-        },
-        required: ["text", "type", "tensions", "possibleEndings"]
-      },
-      quantumStates: {
-        type: "array",
-        description: "Multiple simultaneous truths (probabilities must sum to 1.0)",
-        items: {
-          type: "object",
-          properties: {
-            state: { type: "string", description: "e.g., 'Empowered Tracker', 'Anxious Monitor'" },
-            probability: { type: "number", description: "0.0 to 1.0" }
-          }
+          HL: { type: "object", properties: { score: { type: "number" }, confidence: { type: "string" }, evidenceCount: { type: "number" }, trend: { type: "string" } } },
+          CM: { type: "object", properties: { score: { type: "number" }, confidence: { type: "string" }, evidenceCount: { type: "number" }, trend: { type: "string" } } },
+          DI: { type: "object", properties: { score: { type: "number" }, confidence: { type: "string" }, evidenceCount: { type: "number" }, trend: { type: "string" } } },
+          DL: { type: "object", properties: { score: { type: "number" }, confidence: { type: "string" }, evidenceCount: { type: "number" }, trend: { type: "string" } } },
+          PR: { type: "object", properties: { score: { type: "number" }, confidence: { type: "string" }, evidenceCount: { type: "number" }, trend: { type: "string" } } },
         }
       },
-      temporalLayer: {
+      newEvidence: {
         type: "object",
-        description: "Past-present-future entanglement",
+        description: "New evidence extracted from the user's response",
         properties: {
-          pastStory: { type: "string", description: "Historical health narrative" },
-          presentMoment: { type: "string", description: "Current lived experience" },
-          futureProjection: { type: "string", description: "Imagined trajectory" }
+          dimension: { type: "string", enum: ["HL", "CM", "DI", "DL", "PR"] },
+          type: { type: "string", enum: ["positive", "negative", "contextual"] },
+          summary: { type: "string" },
+          timestamp: { type: "string" }
         }
       },
-      grandNarrative: {
+      contradiction: {
         type: "object",
-        description: "Cultural/medical discourse shaping this story",
+        description: "Any contradiction detected in user statements",
         properties: {
-          discourse: { 
-            type: "string",
-            description: "e.g., 'Medical authority', 'Quantified self', 'Genetic determinism'"
-          },
-          userStance: { 
-            type: "string", 
-            enum: ["accepting", "resisting", "negotiating", "transforming"]
-          }
+          dimension: { type: "string" },
+          earlyStatement: { type: "string" },
+          lateStatement: { type: "string" },
+          resolution: { type: "string" }
         }
       },
-      yamaResonance: {
-        type: "object",
-        description: "Constitutional AI ethical resonance with this fragment",
-        properties: {
-          principle: { 
-            type: "string", 
-            enum: ["Ahimsa", "Satya", "Asteya", "Brahmacharya", "Aparigraha"]
-          },
-          resonance: { 
-            type: "string", 
-            enum: ["harmony", "tension", "exploration"]
-          },
-          insight: { 
-            type: "string",
-            description: "What this principle reveals about the story"
-          }
-        }
-      },
-      entangledWith: {
-        type: "array",
-        items: { type: "string" },
-        description: "Other narrative streams this fragment connects to"
-      },
-      phase: { 
-        type: "string", 
-        enum: ["INVOCATION", "EMERGENCE", "ENTANGLEMENT", "CRYSTALLIZATION", "OPENING"],
-        description: "Current story phase"
-      },
-      storyQualities: {
-        type: "object",
-        description: "Living story metrics",
-        properties: {
-          coherence: { type: "number", description: "0-1: How well fragments connect" },
-          fluidity: { type: "number", description: "0-1: How much still becoming" },
-          authenticity: { type: "number", description: "0-1: Alignment with lived reality" }
-        }
-      }
+      phase: { type: "string", enum: ["OPENING", "CORE", "GAP_FILLING", "VALIDATION", "CLOSING"] },
+      isComplete: { type: "boolean" },
+      summary: { type: "string" },
+      strengths: { type: "array", items: { type: "string" } },
+      developmentPriorities: { type: "array", items: { type: "string" } }
     },
-    required: ["stream", "newFragment", "phase"]
+    required: ["dimensions", "phase"]
   }
 };
 
@@ -767,7 +696,7 @@ const LiveVoiceCoach: React.FC<{ token: string }> = ({ token }) => {
                     silence_duration_ms: 1000
                 },
                 tool_choice: "auto",
-                tools: [updateNarrativeStateTool]
+                tools: [updateAssessmentStateTool]
             }
         };
         ws.send(JSON.stringify(sessionUpdate));

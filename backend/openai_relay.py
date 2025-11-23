@@ -188,13 +188,11 @@ Scores are on a 0-5 scale where: 0=none, 1=minimal, 2=developing, 3=moderate, 4=
                         data = await websocket.receive_text()
                         msg = json.loads(data)
 
-                        # INTERCEPT: Remove tools from session update to prevent OpenAI from blocking
+                        # NOTE: Tools are now passed through to OpenAI (not stripped)
+                        # OpenAI will call updateAssessmentState directly like Culture Coach
                         if msg.get("type") == "session.update" and "session" in msg:
                             if "tools" in msg["session"]:
-                                logging.info("[Relay] Stripping tools from session config (Sidecar will handle them)")
-                                del msg["session"]["tools"]
-                                # Force tool_choice to none so it doesn't look for them
-                                msg["session"]["tool_choice"] = "none"
+                                logging.info("[Relay] Passing tools to OpenAI for direct tool calling")
 
                         # INTERCEPT: Track User Audio Transcription (if available) or just rely on audio
                         # Note: Client sends 'input_audio_buffer.append'. 
