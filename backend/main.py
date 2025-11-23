@@ -452,7 +452,13 @@ Generate HTML with **organic, fractal visual language** (NOT rigid clinical tabl
   
   <section style="margin-bottom: 3em;">
     <h2 style="color: #0f172a; border-left: 4px solid #8b5cf6; padding-left: 1em;">Grand Narratives You're Navigating</h2>
-    [Cultural discourse badges with stances]
+    <div style="display: flex; flex-wrap: wrap; gap: 0.75em; margin-top: 1em;">
+      <!-- Each badge should use this format: -->
+      <span style="display: inline-block; padding: 0.5em 1em; background: #f3e8ff; border-radius: 8px; color: #334155; font-size: 0.9em; margin-bottom: 0.5em;">
+        <strong style="color: #8b5cf6;">[Narrative Name]:</strong> [Stance]
+      </span>
+      <!-- Example: <span style="..."><strong>Medical Authority:</strong> Negotiating</span> -->
+    </div>
   </section>
   
   <section style="margin-bottom: 3em;">
