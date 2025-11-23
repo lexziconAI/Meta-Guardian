@@ -351,9 +351,11 @@ Map the five narrative streams to their dimension codes:
 
 Score meanings: 0=none, 1=minimal, 2=developing, 3=moderate, 4=strong, 5=expert
 
-### CRITICAL PROTOCOL:
+### CRITICAL PROTOCOL - FAILURE TO FOLLOW = UI CRASH:
 1. **FREQUENCY**: Call \`updateAssessmentState\` after EVERY SINGLE user response
-2. **ALL DIMENSIONS**: Always include all 5 dimensions (HL, CM, DI, DL, PR) in each call
+2. **ALL DIMENSIONS MANDATORY**: You MUST include ALL 5 dimensions (HL, CM, DI, DL, PR) in EVERY call
+   - If you have no evidence for a dimension, set score to current value (start at 3) and confidence to "LOW"
+   - NEVER OMIT ANY DIMENSION - the UI requires all 5 to render correctly
 3. **EVIDENCE**: Always include newEvidence with a summary of what you observed
 
 ### TOOL CALL STRUCTURE:
@@ -392,13 +394,15 @@ const updateAssessmentStateTool = {
     properties: {
       dimensions: {
         type: "object",
-        description: "Current scores for all five metabolic health readiness dimensions",
+        description: "Current scores for ALL five metabolic health readiness dimensions. YOU MUST INCLUDE ALL 5.",
+        required: ["HL", "CM", "DI", "DL", "PR"],
+        additionalProperties: false,
         properties: {
-          HL: { type: "object", properties: { score: { type: "number" }, confidence: { type: "string" }, evidenceCount: { type: "number" }, trend: { type: "string" } } },
-          CM: { type: "object", properties: { score: { type: "number" }, confidence: { type: "string" }, evidenceCount: { type: "number" }, trend: { type: "string" } } },
-          DI: { type: "object", properties: { score: { type: "number" }, confidence: { type: "string" }, evidenceCount: { type: "number" }, trend: { type: "string" } } },
-          DL: { type: "object", properties: { score: { type: "number" }, confidence: { type: "string" }, evidenceCount: { type: "number" }, trend: { type: "string" } } },
-          PR: { type: "object", properties: { score: { type: "number" }, confidence: { type: "string" }, evidenceCount: { type: "number" }, trend: { type: "string" } } },
+          HL: { type: "object", required: ["score", "confidence", "evidenceCount", "trend"], properties: { score: { type: "number" }, confidence: { type: "string" }, evidenceCount: { type: "number" }, trend: { type: "string" } } },
+          CM: { type: "object", required: ["score", "confidence", "evidenceCount", "trend"], properties: { score: { type: "number" }, confidence: { type: "string" }, evidenceCount: { type: "number" }, trend: { type: "string" } } },
+          DI: { type: "object", required: ["score", "confidence", "evidenceCount", "trend"], properties: { score: { type: "number" }, confidence: { type: "string" }, evidenceCount: { type: "number" }, trend: { type: "string" } } },
+          DL: { type: "object", required: ["score", "confidence", "evidenceCount", "trend"], properties: { score: { type: "number" }, confidence: { type: "string" }, evidenceCount: { type: "number" }, trend: { type: "string" } } },
+          PR: { type: "object", required: ["score", "confidence", "evidenceCount", "trend"], properties: { score: { type: "number" }, confidence: { type: "string" }, evidenceCount: { type: "number" }, trend: { type: "string" } } },
         }
       },
       newEvidence: {
@@ -982,16 +986,37 @@ const LiveVoiceCoach: React.FC<{ token: string }> = ({ token }) => {
                             // 8. INCREMENT TURN COUNT
                             updated.turnCount = (updated.turnCount || 0) + 1;
                             
-                            // 9. LEGACY COMPATIBILITY: Also update dimensions if provided
+                            // 9. Update dimensions with defensive padding
                             if (args.dimensions) {
                                 if (!updated.dimensions) updated.dimensions = {};
+
+                                // Merge provided dimensions
                                 Object.keys(args.dimensions).forEach((dim: any) => {
                                     updated.dimensions[dim] = {
                                         ...updated.dimensions[dim],
                                         ...args.dimensions[dim]
                                     };
                                 });
-                                
+
+                                // DEFENSIVE PADDING: Ensure all 5 dimensions exist
+                                const requiredDims = ['HL', 'CM', 'DI', 'DL', 'PR'];
+                                const received = Object.keys(args.dimensions);
+                                const missing = requiredDims.filter(d => !received.includes(d));
+
+                                if (missing.length > 0) {
+                                    console.warn(`⚠️ [MISSING DIMENSIONS] ${missing.join(', ')} not sent by OpenAI`);
+                                }
+
+                                requiredDims.forEach(dim => {
+                                    if (!updated.dimensions[dim]) {
+                                        updated.dimensions[dim] = { score: 0, confidence: 'LOW', evidenceCount: 0, trend: 'stable' };
+                                    }
+                                });
+
+                                // Log what we received for debugging
+                                console.log(`[DEBUG] Dimensions received: ${received.join(', ')}`);
+                                console.log(`[DEBUG] Scores: HL=${updated.dimensions.HL?.score}, CM=${updated.dimensions.CM?.score}, DI=${updated.dimensions.DI?.score}, DL=${updated.dimensions.DL?.score}, PR=${updated.dimensions.PR?.score}`);
+
                                 // UPDATE SCORE HISTORY (needed for trajectory chart)
                                 const elapsed = Math.floor((Date.now() - sessionStartTimeRef.current) / 1000);
                                 const newPoint = {

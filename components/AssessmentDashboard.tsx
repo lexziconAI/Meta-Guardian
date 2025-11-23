@@ -30,9 +30,9 @@ ChartJS.register(
 const DimensionRow: React.FC<{ code: string; data: any }> = ({ code, data }) => {
   if (!data) return null;
   const rawScore = typeof data.score === 'number' ? data.score : 0;
-  // Normalize score: If raw score is <= 25, assume 0-25 scale and convert to 0-100.
+  // Normalize score: If raw score is <= 5, assume 0-5 scale and convert to 0-100.
   // Otherwise assume it's already 0-100.
-  const score = rawScore <= 25 ? (rawScore / 25) * 100 : rawScore;
+  const score = rawScore <= 5 ? (rawScore / 5) * 100 : rawScore;
   
   const confidence = data.confidence || 'LOW';
   const trend = data.trend || 'stable';
@@ -159,8 +159,8 @@ const ScoreEvolutionChart: React.FC<{ history: SessionState['scoreHistory'] }> =
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   });
 
-  // Helper to normalize history points
-  const normalize = (val: number) => val <= 25 ? (val / 25) * 100 : val;
+  // Helper to normalize history points (0-5 scale to 0-100%)
+  const normalize = (val: number) => val <= 5 ? (val / 5) * 100 : val;
 
   const data = {
     labels,
