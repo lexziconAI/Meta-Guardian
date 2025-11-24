@@ -1,25 +1,10 @@
 services:
-  # Frontend - Vite React App
-  - type: web
-    runtime: node
-    name: metaguardian-frontend
-    plan: free
-    buildCommand: npm install && npm run build
-    startCommand: npm run preview -- --host 0.0.0.0 --port $PORT
-    envVars:
-      - key: NODE_VERSION
-        value: "20"
-      - key: VITE_API_BASE_URL
-        fromService:
-          name: metaguardian-backend
-          type: web
-          property: host
-
-  # Backend - Python FastAPI
+  # Backend - Python FastAPI (Starter plan - $7/month)
   - type: web
     runtime: python
     name: metaguardian-backend
-    plan: free
+    plan: starter
+    region: oregon
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
@@ -38,3 +23,14 @@ services:
         sync: false
       - key: SENDGRID_FROM_EMAIL
         sync: false
+    autoDeploy: true
+
+  # Frontend - Static Site (FREE)
+  - type: web
+    runtime: static
+    name: metaguardian-frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://metaguardian-backend.onrender.com
