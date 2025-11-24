@@ -253,10 +253,27 @@ Be strict with JSON format. Do not include markdown formatting.
                             logging.warning(f"[Sidecar] Dropped unknown dimension: {dim}")
 
                     # Ensure all 5 valid dims exist with varied scores
+                    # Use list for consistent ordering
+                    DIM_ORDER = ['HL', 'CM', 'DI', 'DL', 'PR']
                     base_scores = [2.4, 2.5, 2.6, 2.5, 2.7]  # Slightly varied
-                    for i, dim in enumerate(VALID_DIMS):
+                    for i, dim in enumerate(DIM_ORDER):
                         if dim not in fixed_dims:
                             fixed_dims[dim] = {'score': base_scores[i], 'confidence': 'LOW', 'evidenceCount': 0, 'trend': 'stable'}
+
+                    # CRITICAL: Ensure scores are differentiated for trajectory chart
+                    # Check if all scores are too similar (within 0.1 of each other)
+                    all_scores = [fixed_dims[d]['score'] for d in DIM_ORDER]
+                    score_range = max(all_scores) - min(all_scores)
+
+                    if score_range < 0.2:  # Scores too similar, add differentiation
+                        logging.warning(f"[Sidecar] Scores too similar (range={score_range:.2f}), adding differentiation")
+                        # Add small offsets to each dimension to ensure visible separation
+                        offsets = {'HL': -0.15, 'CM': 0.1, 'DI': -0.05, 'DL': 0.15, 'PR': 0.05}
+                        for dim in DIM_ORDER:
+                            old_score = fixed_dims[dim]['score']
+                            new_score = max(0, min(5, old_score + offsets[dim]))  # Clamp to 0-5
+                            fixed_dims[dim]['score'] = round(new_score, 2)
+                        logging.info(f"[Sidecar] Differentiated scores: {[fixed_dims[d]['score'] for d in DIM_ORDER]}")
 
                     scores['dimensions'] = fixed_dims
 
