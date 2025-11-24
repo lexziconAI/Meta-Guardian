@@ -42,6 +42,32 @@ async def openai_relay(websocket: WebSocket):
     print(f"Client connected to OpenAI Relay. Websockets version: {websockets.__version__}")
     
     SIDECAR_SYSTEM_PROMPT = """
+⚠️⚠️⚠️ CRITICAL DIMENSION CODES - READ THIS FIRST ⚠️⚠️⚠️
+
+You MUST ONLY use these 5 dimension codes: HL, CM, DI, DL, PR
+- HL = Health Literacy
+- CM = Clinical Markers
+- DI = Data Integration
+- DL = Digital Literacy
+- PR = Preventive Readiness
+
+🚫 FORBIDDEN CODES (NEVER USE THESE):
+- CO, EP, DT, TR, CA - These are from a different system
+- Any other codes not listed above
+
+If you use forbidden codes like CO or EP, the system will break!
+
+⚠️⚠️⚠️ LANGUAGE DETECTION ⚠️⚠️⚠️
+- The user is speaking ENGLISH
+- Do NOT assume other languages like Portuguese, Spanish, etc.
+- Analyze what the user ACTUALLY SAID, not what you imagine
+
+⚠️⚠️⚠️ TERMINOLOGY ⚠️⚠️⚠️
+- "carbs" = carbohydrates (FOOD), NEVER carbon (element)
+- This is a METABOLIC HEALTH app - interpret everything in that context
+
+---
+
 You are an expert Metabolic Health Readiness Assessor for MetaGuardian.
 Your task is to analyze the ongoing conversation between a User and an AI Health Coach.
 You must output a JSON object that matches the 'updateAssessmentState' tool definition.
@@ -202,6 +228,48 @@ Be strict with JSON format. Do not include markdown formatting.
             # NEW: Parse scores and create cryptographically signed message
             try:
                 scores = json.loads(result_json_str)
+
+                # VALIDATION: Fix invalid dimension codes from LLM hallucination
+                VALID_DIMS = {'HL', 'CM', 'DI', 'DL', 'PR'}
+                INVALID_TO_VALID = {
+                    'CO': 'HL',  # Map Culture Coach dims to MetaGuardian
+                    'EP': 'PR',
+                    'DT': 'CM',
+                    'TR': 'DI',
+                    'CA': 'DL'
+                }
+
+                # Fix dimensions object
+                if 'dimensions' in scores:
+                    fixed_dims = {}
+                    for dim, data in scores['dimensions'].items():
+                        if dim in VALID_DIMS:
+                            fixed_dims[dim] = data
+                        elif dim in INVALID_TO_VALID:
+                            mapped = INVALID_TO_VALID[dim]
+                            logging.warning(f"[Sidecar] Fixed invalid dimension {dim} -> {mapped}")
+                            fixed_dims[mapped] = data
+                        else:
+                            logging.warning(f"[Sidecar] Dropped unknown dimension: {dim}")
+
+                    # Ensure all 5 valid dims exist with varied scores
+                    base_scores = [2.4, 2.5, 2.6, 2.5, 2.7]  # Slightly varied
+                    for i, dim in enumerate(VALID_DIMS):
+                        if dim not in fixed_dims:
+                            fixed_dims[dim] = {'score': base_scores[i], 'confidence': 'LOW', 'evidenceCount': 0, 'trend': 'stable'}
+
+                    scores['dimensions'] = fixed_dims
+
+                # Fix newEvidence dimension
+                if 'newEvidence' in scores and 'dimension' in scores['newEvidence']:
+                    ev_dim = scores['newEvidence']['dimension']
+                    if ev_dim not in VALID_DIMS:
+                        if ev_dim in INVALID_TO_VALID:
+                            scores['newEvidence']['dimension'] = INVALID_TO_VALID[ev_dim]
+                            logging.warning(f"[Sidecar] Fixed evidence dimension {ev_dim} -> {INVALID_TO_VALID[ev_dim]}")
+                        else:
+                            scores['newEvidence']['dimension'] = 'HL'  # Default
+
                 tool_event = signer.create_signed_update(
                     scores=scores,
                     source='sidecar_groq' if 'kimi' not in GROQ_MODEL.lower() else 'sidecar_kimi',
@@ -209,7 +277,7 @@ Be strict with JSON format. Do not include markdown formatting.
                     confidence=0.85,
                     reasoning=result_json_str[:200]  # First 200 chars as reasoning trace
                 )
-                logging.info(f"[Sidecar] Created signed message with signature")
+                logging.info(f"[Sidecar] Created signed message with validated dimensions")
             except json.JSONDecodeError:
                 # GRACEFUL DEGRADATION: Fall back to old format if JSON parsing fails
                 logging.warning("[Sidecar] JSON parse failed, using legacy format")
