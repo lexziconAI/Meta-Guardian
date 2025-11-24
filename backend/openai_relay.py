@@ -10,10 +10,9 @@ from groq import AsyncGroq
 from pathlib import Path
 import logging
 
-# Setup File Logging for Debugging
+# Setup Console Logging for Render visibility
 logging.basicConfig(
-    filename='relay_debug.log', 
-    level=logging.DEBUG, 
+    level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     force=True
 )
