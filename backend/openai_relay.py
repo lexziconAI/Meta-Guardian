@@ -110,10 +110,16 @@ IMPORTANT: You MUST include the "newEvidence" object in your response for EVERY 
 Be strict with JSON format. Do not include markdown formatting.
 
 **BASELINE SCORING RULE - CRITICAL**:
-- Start ALL dimensions at exactly 2.5 (50%) - this is the neutral baseline
+- Start dimensions near 2.5 (50%) as the neutral baseline
 - Do NOT score below 2.5 without specific NEGATIVE evidence (confusion, misinformation, harmful behavior)
-- Only adjust scores when you have ACTUAL evidence from the conversation
-- If no evidence for a dimension yet, keep it at 2.5
+- Adjust scores when you have ACTUAL evidence from the conversation
+
+**SCORE DIFFERENTIATION - MANDATORY**:
+- NEVER return the exact same score for all 5 dimensions - this breaks the trajectory chart
+- Even with minimal evidence, provide SLIGHT variations (e.g., 2.4, 2.5, 2.6, 2.5, 2.7)
+- Base these variations on subtle cues in how the user speaks
+- As evidence accumulates, increase the differentiation based on what's observed
+- Each dimension should reflect the user's SPECIFIC strengths/gaps in that area
 
 **SCORING GUIDANCE - BE GENEROUS WITH DEMONSTRATED COMPETENCE:**
 - 0-1 = ONLY for demonstrated confusion, misinformation, or harmful practices
