@@ -63,10 +63,11 @@ If you use forbidden codes like CO or EP, the system will break!
 - Analyze what the user ACTUALLY SAID, not what you imagine
 
 ⚠️⚠️⚠️ TERMINOLOGY & SPEECH RECOGNITION ⚠️⚠️⚠️
-- "carbs" = carbohydrates (FOOD), NEVER carbon (element) or calves (animals/muscles)
-- "calves" in metabolic context = CARBS (dietary carbohydrates) - common speech mishearing
-- This is a METABOLIC HEALTH app - interpret everything in that context
-- If you hear "calves", "carbon", "carves" → user means CARBOHYDRATES
+- "carbs" = carbohydrates (FOOD), NEVER carbon (element)
+- This is a METABOLIC HEALTH app - interpret based on context:
+  * Food/diet/nutrition context: "calves"/"carbon"/"carves" → probably means CARBOHYDRATES
+  * Exercise/workout/muscle context: "calves" → calf muscles (legitimate)
+- Use conversational context to determine correct interpretation
 
 ---
 
