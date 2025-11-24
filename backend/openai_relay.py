@@ -140,12 +140,13 @@ Be strict with JSON format. Do not include markdown formatting.
 - Do NOT score below 2.5 without specific NEGATIVE evidence (confusion, misinformation, harmful behavior)
 - Adjust scores when you have ACTUAL evidence from the conversation
 
-**SCORE DIFFERENTIATION - MANDATORY**:
-- NEVER return the exact same score for all 5 dimensions - this breaks the trajectory chart
-- Even with minimal evidence, provide SLIGHT variations (e.g., 2.4, 2.5, 2.6, 2.5, 2.7)
-- Base these variations on subtle cues in how the user speaks
-- As evidence accumulates, increase the differentiation based on what's observed
-- Each dimension should reflect the user's SPECIFIC strengths/gaps in that area
+**SCORE DIFFERENTIATION - MANDATORY (SYSTEM WILL BREAK IF IGNORED)**:
+- NEVER return the exact same score for all 5 dimensions
+- You MUST vary scores by at least 0.3 between highest and lowest dimension
+- Example first turn: HL=2.4, CM=2.6, DI=2.5, DL=2.7, PR=2.3 (range = 0.4)
+- Base variations on OBSERVABLE cues: vocabulary used, questions asked, knowledge shown
+- Each dimension MUST have a DIFFERENT score - no two dimensions can be identical
+- If you're uncertain, use your best judgment to differentiate based on subtle signals
 
 **SCORING GUIDANCE - BE GENEROUS WITH DEMONSTRATED COMPETENCE:**
 - 0-1 = ONLY for demonstrated confusion, misinformation, or harmful practices
@@ -267,8 +268,8 @@ Be strict with JSON format. Do not include markdown formatting.
 
                     if score_range < 0.2:  # Scores too similar, add differentiation
                         logging.warning(f"[Sidecar] Scores too similar (range={score_range:.2f}), adding differentiation")
-                        # Add small offsets to each dimension to ensure visible separation
-                        offsets = {'HL': -0.15, 'CM': 0.1, 'DI': -0.05, 'DL': 0.15, 'PR': 0.05}
+                        # Neutral offsets (sum to 0) for visible separation without systematic bias
+                        offsets = {'HL': -0.12, 'CM': 0.08, 'DI': -0.04, 'DL': 0.12, 'PR': -0.04}
                         for dim in DIM_ORDER:
                             old_score = fixed_dims[dim]['score']
                             new_score = max(0, min(5, old_score + offsets[dim]))  # Clamp to 0-5
