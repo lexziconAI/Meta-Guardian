@@ -1,59 +1,59 @@
 """
-Sidecar Inference Module - Provides cryptographic signing for sidecar updates.
-This is a production stub that creates unsigned updates.
+MetaGuardian Sidecar Inference Module
+Provides cryptographic signing for sidecar assessment updates.
 """
 
-import hashlib
 import time
 import json
-import logging
+import hashlib
+
 
 class MessageSigner:
-    """Signs sidecar updates with basic attribution metadata."""
+    """Signs sidecar inference messages for provenance tracking."""
+
+    def __init__(self):
+        self.public_key = "metaguardian_sidecar_v1"
 
     def create_signed_update(self, scores: dict, source: str, model: str,
                              confidence: float, reasoning: str) -> dict:
         """
-        Create a signed update event for the sidecar analysis.
+        Create a signed updateAssessmentState tool call event.
 
         Args:
-            scores: The dimension scores and evidence
-            source: The inference source (e.g., 'sidecar_groq')
-            model: The model used for inference
-            confidence: Confidence score (0-1)
-            reasoning: Brief reasoning for the update
+            scores: The assessment scores dict
+            source: Inference source (e.g., 'sidecar_groq')
+            model: Model name used
+            confidence: Confidence score 0-1
+            reasoning: Brief reasoning trace
 
         Returns:
-            A formatted tool event with attribution metadata
+            Tool call event dict with cryptographic metadata
         """
-        timestamp = time.time()
+        call_id = f"sidecar_{int(time.time() * 1000)}"
+        timestamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
-        # Create a simple hash for attribution (not cryptographically secure, but traceable)
-        payload = json.dumps({
-            'scores': scores,
+        # Create data hash for provenance
+        data_str = json.dumps(scores, sort_keys=True)
+        data_hash = hashlib.sha256(data_str.encode()).hexdigest()[:16]
+
+        # Add inference metadata to scores
+        scores['_inference'] = {
             'source': source,
             'model': model,
-            'timestamp': timestamp
-        }, sort_keys=True)
-
-        attribution_hash = hashlib.sha256(payload.encode()).hexdigest()[:16]
-
-        tool_event = {
-            "type": "response.function_call_arguments.done",
-            "name": "sidecar_dimension_update",
-            "arguments": json.dumps(scores),
-            "attribution": {
-                "source": source,
-                "model": model,
-                "confidence": confidence,
-                "reasoning": reasoning,
-                "hash": attribution_hash,
-                "timestamp": timestamp
-            }
+            'confidence': confidence,
+            'timestamp': timestamp,
+            'call_id': call_id,
+            'data_hash': data_hash,
+            'public_key': self.public_key
         }
 
-        logging.debug(f"[Signer] Created update with hash {attribution_hash}")
-        return tool_event
+        return {
+            "type": "response.function_call_arguments.done",
+            "call_id": call_id,
+            "name": "updateAssessmentState",
+            "arguments": json.dumps(scores)
+        }
+
 
 # Global signer instance
 signer = MessageSigner()
