@@ -239,66 +239,79 @@ Be strict with JSON format. Do not include markdown formatting.
                     'TR': 'DI',
                     'CA': 'DL'
                 }
+                DIM_ORDER = ['HL', 'CM', 'DI', 'DL', 'PR']
+                base_scores = [2.4, 2.5, 2.6, 2.5, 2.7]  # Slightly varied defaults
 
                 # Fix dimensions object
-                if 'dimensions' in scores:
-                    fixed_dims = {}
-                    for dim, data in scores['dimensions'].items():
-                        if dim in VALID_DIMS:
-                            fixed_dims[dim] = data
-                        elif dim in INVALID_TO_VALID:
-                            mapped = INVALID_TO_VALID[dim]
-                            logging.warning(f"[Sidecar] Fixed invalid dimension {dim} -> {mapped}")
-                            fixed_dims[mapped] = data
-                        else:
-                            logging.warning(f"[Sidecar] Dropped unknown dimension: {dim}")
+                try:
+                    if 'dimensions' in scores:
+                        fixed_dims = {}
+                        for dim, data in scores['dimensions'].items():
+                            if dim in VALID_DIMS:
+                                fixed_dims[dim] = data
+                            elif dim in INVALID_TO_VALID:
+                                mapped = INVALID_TO_VALID[dim]
+                                logging.warning(f"[Sidecar] Fixed invalid dimension {dim} -> {mapped}")
+                                fixed_dims[mapped] = data
+                            else:
+                                logging.warning(f"[Sidecar] Dropped unknown dimension: {dim}")
 
-                    # Ensure all 5 valid dims exist with varied scores
-                    # Use list for consistent ordering
-                    DIM_ORDER = ['HL', 'CM', 'DI', 'DL', 'PR']
-                    base_scores = [2.4, 2.5, 2.6, 2.5, 2.7]  # Slightly varied
-                    for i, dim in enumerate(DIM_ORDER):
-                        if dim not in fixed_dims:
-                            fixed_dims[dim] = {'score': base_scores[i], 'confidence': 'LOW', 'evidenceCount': 0, 'trend': 'stable'}
+                        # Ensure all 5 valid dims exist with varied scores
+                        for i, dim in enumerate(DIM_ORDER):
+                            if dim not in fixed_dims:
+                                fixed_dims[dim] = {'score': base_scores[i], 'confidence': 'LOW', 'evidenceCount': 0, 'trend': 'stable'}
 
-                    # CRITICAL: Ensure scores are differentiated for trajectory chart
-                    # Check if all scores are too similar (within 0.1 of each other)
-                    all_scores = [fixed_dims[d]['score'] for d in DIM_ORDER]
-                    score_range = max(all_scores) - min(all_scores)
+                        # CRITICAL: Ensure scores are differentiated for trajectory chart
+                        try:
+                            all_scores = [fixed_dims[d].get('score', 2.5) for d in DIM_ORDER]
+                            score_range = max(all_scores) - min(all_scores)
 
-                    if score_range < 0.2:  # Scores too similar, add differentiation
-                        logging.warning(f"[Sidecar] Scores too similar (range={score_range:.2f}), adding differentiation")
-                        # Neutral offsets (sum to 0) for visible separation without systematic bias
-                        offsets = {'HL': -0.12, 'CM': 0.08, 'DI': -0.04, 'DL': 0.12, 'PR': -0.04}
-                        for dim in DIM_ORDER:
-                            old_score = fixed_dims[dim]['score']
-                            new_score = max(0, min(5, old_score + offsets[dim]))  # Clamp to 0-5
-                            fixed_dims[dim]['score'] = round(new_score, 2)
-                        logging.info(f"[Sidecar] Differentiated scores: {[fixed_dims[d]['score'] for d in DIM_ORDER]}")
+                            if score_range < 0.2:
+                                logging.warning(f"[Sidecar] Scores too similar (range={score_range:.2f}), adding differentiation")
+                                offsets = {'HL': -0.12, 'CM': 0.08, 'DI': -0.04, 'DL': 0.12, 'PR': -0.04}
+                                for dim in DIM_ORDER:
+                                    old_score = fixed_dims[dim].get('score', 2.5)
+                                    new_score = max(0, min(5, old_score + offsets[dim]))
+                                    fixed_dims[dim]['score'] = round(new_score, 2)
+                                logging.info(f"[Sidecar] Differentiated scores: {[fixed_dims[d]['score'] for d in DIM_ORDER]}")
+                        except Exception as e:
+                            logging.error(f"[Sidecar] Score differentiation error: {e}")
 
-                    scores['dimensions'] = fixed_dims
+                        scores['dimensions'] = fixed_dims
+                    else:
+                        # No dimensions - create default
+                        logging.warning("[Sidecar] No dimensions in response, creating defaults")
+                        scores['dimensions'] = {
+                            dim: {'score': base_scores[i], 'confidence': 'LOW', 'evidenceCount': 0, 'trend': 'stable'}
+                            for i, dim in enumerate(DIM_ORDER)
+                        }
+                except Exception as e:
+                    logging.error(f"[Sidecar] Dimension validation error: {e}")
 
                 # Fix newEvidence dimension
-                if 'newEvidence' in scores and 'dimension' in scores['newEvidence']:
-                    ev_dim = scores['newEvidence']['dimension']
-                    if ev_dim not in VALID_DIMS:
-                        if ev_dim in INVALID_TO_VALID:
-                            scores['newEvidence']['dimension'] = INVALID_TO_VALID[ev_dim]
-                            logging.warning(f"[Sidecar] Fixed evidence dimension {ev_dim} -> {INVALID_TO_VALID[ev_dim]}")
-                        else:
-                            scores['newEvidence']['dimension'] = 'HL'  # Default
+                try:
+                    if 'newEvidence' in scores and 'dimension' in scores['newEvidence']:
+                        ev_dim = scores['newEvidence']['dimension']
+                        if ev_dim not in VALID_DIMS:
+                            if ev_dim in INVALID_TO_VALID:
+                                scores['newEvidence']['dimension'] = INVALID_TO_VALID[ev_dim]
+                                logging.warning(f"[Sidecar] Fixed evidence dimension {ev_dim} -> {INVALID_TO_VALID[ev_dim]}")
+                            else:
+                                scores['newEvidence']['dimension'] = 'HL'
+                except Exception as e:
+                    logging.error(f"[Sidecar] Evidence validation error: {e}")
 
                 tool_event = signer.create_signed_update(
                     scores=scores,
                     source='sidecar_groq' if 'kimi' not in GROQ_MODEL.lower() else 'sidecar_kimi',
                     model=GROQ_MODEL,
                     confidence=0.85,
-                    reasoning=result_json_str[:200]  # First 200 chars as reasoning trace
+                    reasoning=result_json_str[:200]
                 )
                 logging.info(f"[Sidecar] Created signed message with validated dimensions")
-            except json.JSONDecodeError:
-                # GRACEFUL DEGRADATION: Fall back to old format if JSON parsing fails
-                logging.warning("[Sidecar] JSON parse failed, using legacy format")
+            except Exception as e:
+                # GRACEFUL DEGRADATION: Fall back to old format if ANY error occurs
+                logging.error(f"[Sidecar] Validation failed: {e}, using legacy format")
                 tool_event = {
                     "type": "response.function_call_arguments.done",
                     "call_id": f"sidecar_{int(time.time())}",
