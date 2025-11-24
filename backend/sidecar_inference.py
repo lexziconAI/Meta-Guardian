@@ -36,8 +36,8 @@ class MessageSigner:
         data_str = json.dumps(scores, sort_keys=True)
         data_hash = hashlib.sha256(data_str.encode()).hexdigest()[:16]
 
-        # Add inference metadata to scores
-        scores['_inference'] = {
+        # Add inference metadata to scores (must match frontend's expected field name)
+        scores['_inference_metadata'] = {
             'source': source,
             'model': model,
             'confidence': confidence,

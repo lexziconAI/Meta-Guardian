@@ -2,6 +2,7 @@ import os
 import json
 import asyncio
 import time
+import re
 import websockets
 # from websockets.client import connect # Deprecated
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
@@ -9,6 +10,7 @@ from dotenv import load_dotenv
 from groq import AsyncGroq
 from pathlib import Path
 import logging
+from sidecar_inference import signer
 
 # Setup Console Logging for Render visibility
 logging.basicConfig(
@@ -31,6 +33,8 @@ logging.info(f"Module-level OPENAI_API_KEY: {OPENAI_API_KEY[:10] if OPENAI_API_K
 print(f"DEBUG: Module-level OPENAI_API_KEY: {OPENAI_API_KEY[:10] if OPENAI_API_KEY else 'None'}")
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+if not GROQ_API_KEY:
+    logging.warning("GROQ_API_KEY not set - sidecar inference will be disabled")
 # GROQ_MODEL = "moonshotai/kimi-k2-instruct-0905" # Kimi K2 - doesn't differentiate scores well
 GROQ_MODEL = "llama-3.3-70b-versatile"  # Better for structured scoring
 
@@ -184,45 +188,52 @@ Be strict with JSON format. Do not include markdown formatting.
         "OpenAI-Beta": "realtime=v1"
     }
     
-    # Initialize Sidecar
-    groq_client = AsyncGroq(api_key=GROQ_API_KEY)
+    # Initialize Sidecar (only if GROQ_API_KEY available)
+    groq_client = AsyncGroq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
     conversation_history = [] # List of {"role": "user"|"assistant", "content": "..."}
-    
-    # NEW: Import sidecar message signer for cryptographic attribution
-    from sidecar_inference import signer
-    
+
     async def run_sidecar_analysis(history_snapshot):
         """Runs Groq inference in the background and injects the result back to the client."""
+        if not groq_client:
+            logging.warning("[Sidecar] Skipped - no GROQ_API_KEY configured")
+            return
+
         try:
             logging.info(f"[Sidecar] Triggering analysis with {len(history_snapshot)} turns...")
             start_time = time.time()
-            
+
             messages = [
                 {"role": "system", "content": SIDECAR_SYSTEM_PROMPT},
                 {"role": "user", "content": f"Current Conversation History:\n{json.dumps(history_snapshot, indent=2)}\n\nAnalyze the latest turn and provide the JSON update."}
             ]
 
-            # Use parameters from user's snippet (Kimi K2 specific)
-            completion = await groq_client.chat.completions.create(
-                model=GROQ_MODEL,
-                messages=messages,
-                temperature=0.6,
-                max_completion_tokens=4096,
-                top_p=1,
-                stream=False,
-                stop=None
-            )
+            # Use parameters with timeout to prevent hanging
+            try:
+                completion = await asyncio.wait_for(
+                    groq_client.chat.completions.create(
+                        model=GROQ_MODEL,
+                        messages=messages,
+                        temperature=0.6,
+                        max_completion_tokens=4096,
+                        top_p=1,
+                        stream=False,
+                        stop=None
+                    ),
+                    timeout=30.0  # 30 second timeout
+                )
+            except asyncio.TimeoutError:
+                logging.error("[Sidecar] Groq API timeout after 30s")
+                return
             
             result_json_str = completion.choices[0].message.content
             logging.info(f"[Sidecar] Raw JSON: {result_json_str}") # DEBUG LOGGING
 
             # CLEANUP: Remove markdown code blocks if present
             if "```" in result_json_str:
-                import re
                 # Remove ```json ... ``` or just ``` ... ```
-                result_json_str = re.sub(r'^```json\s*', '', result_json_str)
-                result_json_str = re.sub(r'^```\s*', '', result_json_str)
-                result_json_str = re.sub(r'\s*```$', '', result_json_str)
+                result_json_str = re.sub(r'```json\s*', '', result_json_str, flags=re.MULTILINE)
+                result_json_str = re.sub(r'```\s*', '', result_json_str, flags=re.MULTILINE)
+                result_json_str = result_json_str.strip()
                 logging.info(f"[Sidecar] Cleaned JSON: {result_json_str}")
 
             duration = time.time() - start_time
@@ -303,6 +314,19 @@ Be strict with JSON format. Do not include markdown formatting.
                 except Exception as e:
                     logging.error(f"[Sidecar] Evidence validation error: {e}")
 
+                # Fix contradiction dimension
+                try:
+                    if 'contradiction' in scores and scores['contradiction'] and 'dimension' in scores['contradiction']:
+                        contr_dim = scores['contradiction']['dimension']
+                        if contr_dim not in VALID_DIMS:
+                            if contr_dim in INVALID_TO_VALID:
+                                scores['contradiction']['dimension'] = INVALID_TO_VALID[contr_dim]
+                                logging.warning(f"[Sidecar] Fixed contradiction dimension {contr_dim} -> {INVALID_TO_VALID[contr_dim]}")
+                            else:
+                                scores['contradiction']['dimension'] = 'HL'
+                except Exception as e:
+                    logging.error(f"[Sidecar] Contradiction validation error: {e}")
+
                 tool_event = signer.create_signed_update(
                     scores=scores,
                     source='sidecar_groq' if 'kimi' not in GROQ_MODEL.lower() else 'sidecar_kimi',
@@ -316,7 +340,7 @@ Be strict with JSON format. Do not include markdown formatting.
                 logging.error(f"[Sidecar] Validation failed: {e}, using legacy format")
                 tool_event = {
                     "type": "response.function_call_arguments.done",
-                    "call_id": f"sidecar_{int(time.time())}",
+                    "call_id": f"sidecar_{int(time.time() * 1000)}",
                     "name": "updateAssessmentState",
                     "arguments": result_json_str
                 }
